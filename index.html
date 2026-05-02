@@ -1,0 +1,2071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decision Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0c;--surface:#111115;--surface2:#18181e;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#f0f0f2;--muted:#6b6b78;--muted2:#9898a8;
+  --green:#22c55e;--gdim:rgba(34,197,94,0.12);--gglow:rgba(34,197,94,0.18);
+  --red:#ef4444;--rdim:rgba(239,68,68,0.12);--rglow:rgba(239,68,68,0.18);
+  --amber:#f59e0b;--adim:rgba(245,158,11,0.12);
+  --blue:#3b82f6;--bdim:rgba(59,130,246,0.12);
+  --purple:#a855f7;--pdim:rgba(168,85,247,0.12);
+  --r:12px;--rs:8px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Syne',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased}
+.shell{max-width:980px;margin:0 auto;padding:0 22px 80px}
+
+/* HEADER */
+header{padding:38px 0 30px;border-bottom:1px solid var(--border);margin-bottom:32px;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.logo-lbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:500}
+.logo-title{font-size:25px;font-weight:700;letter-spacing:-0.5px}
+.logo-title span{color:var(--green)}
+.stats{display:flex;gap:18px;flex-wrap:wrap}
+.stat{text-align:right}
+.sv{font-family:'DM Mono',monospace;font-size:18px;font-weight:500;line-height:1}
+.sl{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:3px}
+
+/* SECTION LABEL */
+.slabel{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:13px;display:flex;align-items:center;gap:10px}
+.slabel::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* METRICS BAR */
+.mbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:32px}
+.mc{background:var(--surface);padding:15px 17px;display:flex;flex-direction:column;gap:4px}
+.mc-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:500}
+.mc-val{font-family:'DM Mono',monospace;font-size:19px;font-weight:500;line-height:1;transition:color .3s}
+.mc-sub{font-size:9px;color:var(--muted);margin-top:1px}
+
+/* FORM */
+.fcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:32px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px}
+.ffull{grid-column:1/-1}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted2);font-weight:500}
+.fi{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:9px 12px;color:var(--text);font-family:'Syne',sans-serif;font-size:13px;outline:none;transition:border-color .18s;width:100%}
+.fi:focus{border-color:var(--border2);box-shadow:0 0 0 3px rgba(255,255,255,.04)}
+.fi::placeholder{color:var(--muted)}
+textarea.fi{min-height:58px;resize:none}
+
+/* confidence */
+.cbgroup{display:flex;gap:5px}
+.cb{flex:1;padding:7px 6px;border-radius:var(--rs);border:1px solid var(--border);background:transparent;color:var(--muted2);font-family:'Syne',sans-serif;font-size:11px;cursor:pointer;text-align:center;transition:all .15s}
+.cb:hover{border-color:var(--border2);color:var(--text)}
+.cb.on.low{background:var(--rdim);border-color:rgba(239,68,68,.3);color:var(--red)}
+.cb.on.med{background:var(--adim);border-color:rgba(245,158,11,.3);color:var(--amber)}
+.cb.on.high{background:var(--gdim);border-color:rgba(34,197,94,.3);color:var(--green)}
+
+/* preview */
+.prev-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:11px}
+.prev-cell{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:10px 13px;display:flex;align-items:center;justify-content:space-between}
+.prev-lbl{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.prev-val{font-family:'DM Mono',monospace;font-size:15px;font-weight:500;transition:color .18s}
+
+/* warnings */
+.wbanner{border-radius:var(--rs);padding:8px 12px;font-size:11px;line-height:1.5;margin-bottom:9px;display:none}
+.wbanner.on{display:block}
+.w-extreme{background:var(--pdim);color:var(--purple);border-left:2px solid var(--purple)}
+.w-noedge{background:var(--rdim);color:var(--red);border-left:2px solid var(--red)}
+
+.btn-add{width:100%;padding:12px;background:var(--green);color:#000;border:none;border-radius:var(--rs);font-family:'Syne',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s,transform .1s;letter-spacing:.3px}
+.btn-add:hover{opacity:.87}
+.btn-add:active{transform:scale(.99)}
+
+/* FILTER */
+.fw{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.fbar{display:flex;gap:4px;flex-wrap:wrap}
+.fbtn{padding:5px 12px;border-radius:100px;border:1px solid var(--border);background:transparent;color:var(--muted2);font-family:'Syne',sans-serif;font-size:11px;cursor:pointer;transition:all .15s}
+.fbtn:hover{border-color:var(--border2);color:var(--text)}
+.fbtn.on{background:var(--surface2);border-color:var(--border2);color:var(--text)}
+
+/* CARDS */
+#dg{display:grid;grid-template-columns:repeat(auto-fill,minmax(285px,1fr));gap:13px;margin-bottom:48px}
+.empty{grid-column:1/-1;text-align:center;padding:48px 20px;color:var(--muted)}
+.empty .ei{font-size:26px;margin-bottom:8px;opacity:.3}
+.empty p{font-size:13px}
+
+.dc{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column;transition:transform .2s,box-shadow .2s;animation:fu .3s ease both}
+@keyframes fu{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+.dc:hover{transform:translateY(-2px)}
+.dc.good{border-color:rgba(34,197,94,.2);box-shadow:0 0 18px var(--gglow)}
+.dc.bad{border-color:rgba(239,68,68,.17);box-shadow:0 0 16px var(--rglow)}
+.dc.neutral{border-color:rgba(245,158,11,.17)}
+
+.dt{padding:15px 17px 11px;flex:1}
+.dm{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.dn{font-size:13px;font-weight:600;line-height:1.3;flex:1}
+.dbadge{font-family:'DM Mono',monospace;font-size:9px;padding:2px 7px;border-radius:100px;font-weight:500;flex-shrink:0;letter-spacing:.4px}
+.bg-good{background:var(--gdim);color:var(--green)}
+.bg-bad{background:var(--rdim);color:var(--red)}
+.bg-neu{background:var(--adim);color:var(--amber)}
+.bg-flat{background:var(--surface2);color:var(--muted2)}
+.bg-strong{background:var(--gdim);color:var(--green)}
+.bg-needs{background:var(--adim);color:var(--amber)}
+.bg-noedge{background:var(--rdim);color:var(--red)}
+.dc.strong_edge{border-color:rgba(34,197,94,.22);box-shadow:0 0 18px var(--gglow)}
+.dc.needs_verify{border-color:rgba(245,158,11,.2)}
+.dc.no_edge{border-color:rgba(239,68,68,.17)}
+.sig-grid{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px;opacity:.75}
+.sig{display:inline-flex;align-items:center;gap:3px;font-size:9px;color:var(--muted);padding:2px 6px;background:var(--surface2);border-radius:3px;line-height:1}
+.sig-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.sig-ok .sig-dot{background:var(--green)}
+.sig-warn .sig-dot{background:var(--amber)}
+.sig-bad .sig-dot{background:var(--red)}
+.sig-ok{color:var(--muted)}.sig-warn{color:var(--muted)}.sig-bad{color:var(--muted)}
+
+/* toggle groups for new form fields */
+.tgroup{display:flex;flex-wrap:wrap;gap:4px}
+.tb{padding:6px 11px;border-radius:var(--rs);border:1px solid var(--border);background:transparent;color:var(--muted2);font-family:'Syne',sans-serif;font-size:11px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.tb:hover{border-color:var(--border2);color:var(--text)}
+.tb.on{background:var(--surface2);border-color:var(--border2);color:var(--text)}
+.tb.on.g{background:var(--gdim);border-color:rgba(34,197,94,.3);color:var(--green)}
+.tb.on.a{background:var(--adim);border-color:rgba(245,158,11,.3);color:var(--amber)}
+.tb.on.r{background:var(--rdim);border-color:rgba(239,68,68,.3);color:var(--red)}
+
+/* advanced toggle */
+.adv-toggle{display:flex;align-items:center;gap:6px;background:none;border:1px solid var(--border);border-radius:var(--rs);color:var(--muted);font-family:'Syne',sans-serif;font-size:11px;cursor:pointer;padding:7px 12px;margin-top:2px;transition:all .15s;width:100%;text-align:left}
+.adv-toggle:hover{color:var(--muted2);border-color:var(--border2)}
+.adv-toggle.open{color:var(--muted2);border-color:var(--border2);background:var(--surface2)}
+.adv-chevron{display:inline-block;transition:transform .2s;font-size:9px;margin-left:auto}
+.adv-toggle.open .adv-chevron{transform:rotate(180deg)}
+.adv-badge{font-size:9px;padding:1px 6px;border-radius:100px;background:var(--adim);color:var(--amber);margin-left:4px;font-weight:500;letter-spacing:.3px}
+.adv-body{display:none;padding-top:14px;margin-top:12px;border-top:1px solid var(--border)}
+.adv-body.open{display:block}
+
+/* default / refined toggle button states */
+.tb-wrap{position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:2px}
+.tb-state{font-size:8px;letter-spacing:.5px;text-transform:uppercase;font-weight:500;opacity:.6;line-height:1}
+.tb-state.is-default{color:var(--muted)}
+.tb-state.is-refined{color:var(--green)}
+.tb.on.refined{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.35);color:var(--green)}
+.tb.on.refined .tb-state{opacity:1}
+
+/* card quality indicator */
+.qual-pill{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:500;letter-spacing:.4px;padding:2px 8px;border-radius:100px;margin-bottom:7px}
+.qual-default{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.qual-partial{background:var(--adim);color:var(--amber);border:1px solid rgba(245,158,11,.2)}
+.qual-high{background:var(--gdim);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+.qual-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.qual-default .qual-dot{background:var(--muted)}
+.qual-partial .qual-dot{background:var(--amber)}
+.qual-high .qual-dot{background:var(--green)}
+
+.cpill{display:inline-flex;align-items:center;font-size:9px;padding:2px 6px;border-radius:100px;font-weight:500;letter-spacing:.4px;margin-bottom:7px}
+.cp-low{background:var(--rdim);color:var(--red)}
+.cp-med{background:var(--adim);color:var(--amber)}
+.cp-high{background:var(--gdim);color:var(--green)}
+
+.pg{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:9px}
+.pc{background:var(--surface2);border-radius:5px;padding:7px 8px}
+.pc-l{font-size:8px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.pc-v{font-family:'DM Mono',monospace;font-size:11px;font-weight:500}
+.pos{color:var(--green)}.neg{color:var(--red)}.neu{color:var(--amber)}
+
+.dnote{font-size:11px;color:var(--muted2);font-style:italic;line-height:1.4;margin-bottom:7px}
+.il{font-size:11px;color:var(--muted);padding:7px 10px;background:var(--surface2);border-radius:5px;border-left:2px solid;line-height:1.4;margin-bottom:5px}
+.il.good{border-color:var(--green)}.il.bad{border-color:var(--red)}.il.neutral{border-color:var(--amber)}
+.dts{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:3px}
+
+.cwarn{font-size:9px;padding:5px 9px;border-radius:4px;line-height:1.4;margin-bottom:7px}
+.cw-extreme{background:var(--pdim);color:var(--purple)}
+.cw-noedge{background:var(--rdim);color:var(--red)}
+
+/* CARD FOOTER */
+.df{border-top:1px solid var(--border);padding:11px 17px}
+.dtaken{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px}
+.dlabel{font-size:11px;font-weight:600;letter-spacing:.4px}
+.dlabel.buy{color:var(--green)}.dlabel.pass{color:var(--muted2)}
+.dtime{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace}
+.ubtn{font-size:9px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--muted);padding:2px 7px;cursor:pointer;font-family:'Syne',sans-serif;transition:all .15s}
+.ubtn:hover{border-color:var(--border2);color:var(--text)}
+.dbtns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.dbtn{padding:8px 10px;border-radius:var(--rs);border:1px solid;font-family:'Syne',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;letter-spacing:.3px}
+.dbtn.bb{background:var(--gdim);border-color:rgba(34,197,94,.3);color:var(--green)}
+.dbtn.bb:hover{background:rgba(34,197,94,.2)}
+.dbtn.pb{background:transparent;border-color:var(--border);color:var(--muted2)}
+.dbtn.pb:hover{background:var(--surface2);color:var(--text)}
+.delbtn{margin-top:7px;width:100%;padding:5px;background:transparent;border:none;color:var(--muted);font-family:'Syne',sans-serif;font-size:10px;cursor:pointer;border-radius:var(--rs);transition:all .15s}
+.delbtn:hover{color:var(--red);background:var(--rdim)}
+
+/* OUTCOME */
+.oc{margin-top:9px;padding-top:9px;border-top:1px solid var(--border)}
+.oq{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:6px}
+.otg{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:6px}
+.otb{padding:7px 8px;border-radius:var(--rs);border:1px solid var(--border);background:var(--surface2);color:var(--muted2);font-family:'Syne',sans-serif;font-size:10px;font-weight:500;cursor:pointer;text-align:left;transition:all .15s;line-height:1.2}
+.otb:hover{border-color:var(--border2);color:var(--text)}
+.oti{display:block;font-size:11px;margin-bottom:2px}
+.sform{margin-top:7px}
+.sform label{display:block;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:4px}
+.srow{display:flex;gap:5px;margin-bottom:5px}
+.sinput{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:7px 10px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;outline:none;transition:border-color .18s;min-width:0}
+.sinput:focus{border-color:var(--border2)}
+.sinput::placeholder{color:var(--muted)}
+.cbtn{padding:7px 12px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--surface2);color:var(--muted2);font-family:'Syne',sans-serif;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s}
+.cbtn:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
+.snote{font-size:9px;color:var(--muted);line-height:1.4;margin-bottom:5px}
+.rsel{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:7px 10px;color:var(--text);font-family:'Syne',sans-serif;font-size:11px;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6b78' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:27px}
+.rsel option{background:#18181e}
+
+/* VERDICT */
+.vd{margin-top:7px;padding:8px 10px;border-radius:var(--rs);font-size:11px;font-weight:600;display:flex;align-items:flex-start;justify-content:space-between;gap:5px;animation:fu .22s ease both;flex-wrap:wrap}
+.vd-txt{flex:1}
+.vg{background:var(--gdim);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+.vr{background:var(--rdim);color:var(--red);border:1px solid rgba(239,68,68,.17)}
+.va{background:var(--adim);color:var(--amber);border:1px solid rgba(245,158,11,.2)}
+.vn{background:var(--surface2);color:var(--muted2);border:1px solid var(--border)}
+.vb{background:var(--bdim);color:var(--blue);border:1px solid rgba(59,130,246,.18)}
+.vchg{font-size:9px;font-weight:400;opacity:.7;cursor:pointer;text-decoration:underline;text-underline-offset:2px;background:none;border:none;color:inherit;font-family:'Syne',sans-serif;padding:0;flex-shrink:0;align-self:center}
+.vchg:hover{opacity:1}
+.cbadge{display:inline-block;font-size:8px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;padding:2px 5px;border-radius:100px;vertical-align:middle;margin-left:4px}
+.cb-confirmed{background:var(--gdim);color:var(--green)}
+.cb-estimated{background:var(--adim);color:var(--amber)}
+.cb-conflict{background:var(--rdim);color:var(--red)}
+.cb-review{background:var(--surface2);color:var(--muted2)}
+.cb-pending{background:var(--bdim);color:var(--blue)}
+.cb-still{background:var(--bdim);color:var(--blue)}
+.cnote{margin-top:5px;padding:6px 9px;border-radius:4px;font-size:10px;color:var(--muted2);background:var(--surface2);border-left:2px solid var(--amber);line-height:1.5;font-weight:400}
+.vmeta{margin-top:4px;font-size:9px;color:var(--muted);line-height:1.4;font-weight:400}
+
+/* HISTORY */
+#hl{display:flex;flex-direction:column;gap:1px;background:var(--border);border-radius:var(--r);overflow:hidden;border:1px solid var(--border)}
+.hi{background:var(--surface);padding:11px 17px;display:grid;grid-template-columns:1fr auto auto auto auto;gap:13px;align-items:center;transition:background .15s}
+.hi:hover{background:var(--surface2)}
+.hi-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:500}
+.hi-d{font-size:9px;font-weight:600;text-transform:uppercase;padding:2px 7px;border-radius:100px;letter-spacing:.4px;white-space:nowrap}
+.hi-d.buy{background:var(--gdim);color:var(--green)}
+.hi-d.pass{background:var(--surface2);color:var(--muted2)}
+.hi-p{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;text-align:right;white-space:nowrap}
+.hbadge{font-size:9px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;padding:2px 6px;border-radius:100px;white-space:nowrap}
+.hb-g{background:var(--gdim);color:var(--green)}
+.hb-r{background:var(--rdim);color:var(--red)}
+.hb-a{background:var(--adim);color:var(--amber)}
+.hb-n{background:var(--surface2);color:var(--muted)}
+.hb-b{background:var(--bdim);color:var(--blue)}
+.hi-t{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:right;white-space:nowrap}
+.hempty{padding:32px;text-align:center;color:var(--muted);font-size:12px;background:var(--surface)}
+
+/* TOAST */
+#toast{position:fixed;bottom:22px;right:22px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rs);padding:10px 15px;font-size:12px;color:var(--text);pointer-events:none;opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s;z-index:999;max-width:255px}
+#toast.on{opacity:1;transform:translateY(0)}
+
+/* INSIGHTS */
+.ins-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;margin-bottom:12px}
+.ins-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:20px}
+.ins-cell{background:var(--surface);padding:13px 16px}
+.ins-cell-lbl{font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:4px}
+.ins-cell-val{font-family:'DM Mono',monospace;font-size:17px;font-weight:500;line-height:1}
+.ins-cell-sub{font-size:9px;color:var(--muted);margin-top:2px}
+.ins-sep{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:500;margin:16px 0 10px;padding-top:16px;border-top:1px solid var(--border)}
+/* bar chart */
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.bar-row:last-child{margin-bottom:0}
+.bar-lbl{font-size:11px;color:var(--muted2);width:130px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .4s ease}
+.bar-count{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted2);width:20px;text-align:right;flex-shrink:0}
+/* profit timeline */
+.pt-row{display:flex;align-items:flex-end;gap:4px;height:60px;margin-bottom:6px}
+.pt-bar{flex:1;border-radius:3px 3px 0 0;min-height:3px;transition:height .3s ease}
+.pt-bar.pos{background:var(--green)}
+.pt-bar.neg{background:var(--red);border-radius:0 0 3px 3px;align-self:flex-start}
+.pt-labels{display:flex;gap:4px}
+.pt-label{flex:1;font-size:8px;color:var(--muted);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* insight cards */
+.insight-item{background:var(--surface2);border-radius:var(--rs);padding:11px 14px;margin-bottom:8px;border-left:2px solid var(--amber);display:flex;gap:10px;align-items:flex-start}
+.insight-item:last-child{margin-bottom:0}
+.insight-item.info{border-color:var(--blue)}
+.insight-item.warn{border-color:var(--amber)}
+.insight-item.good{border-color:var(--green)}
+.insight-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.insight-dot.info{background:var(--blue)}
+.insight-dot.warn{background:var(--amber)}
+.insight-dot.good{background:var(--green)}
+.insight-txt{font-size:12px;color:var(--muted2);line-height:1.5}
+.insight-txt strong{color:var(--text);font-weight:600}
+.ins-empty{font-size:12px;color:var(--muted);padding:16px 0;text-align:center}
+/* threshold setting */
+.threshold-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:12px 14px;background:var(--surface2);border-radius:var(--rs);border:1px solid var(--border)}
+.threshold-lbl{font-size:11px;color:var(--muted2);flex:1}
+.threshold-input{width:80px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:5px 9px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;outline:none;text-align:right;transition:border-color .18s}
+.threshold-input:focus{border-color:var(--border2)}
+.threshold-save{padding:5px 12px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--muted2);font-family:'Syne',sans-serif;font-size:11px;cursor:pointer;transition:all .15s}
+.threshold-save:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
+
+/* EDIT MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;padding:20px}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:22px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:15px;font-weight:600;margin-bottom:16px}
+.modal-foot{display:flex;gap:8px;margin-top:16px}
+.btn-save{flex:1;padding:10px;background:var(--green);color:#000;border:none;border-radius:var(--rs);font-family:'Syne',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.btn-save:hover{opacity:.87}
+.btn-cancel{padding:10px 16px;border-radius:var(--rs);border:1px solid var(--border);background:transparent;color:var(--muted2);font-family:'Syne',sans-serif;font-size:13px;cursor:pointer;transition:all .15s}
+.btn-cancel:hover{color:var(--text);border-color:var(--border2)}
+
+/* TABS */
+.app-tab{padding:8px 16px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:'Syne',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap;margin-bottom:-1px}
+.app-tab:hover{color:var(--muted2)}
+.app-tab.on{color:var(--text);border-bottom-color:var(--green)}
+.app-pane{display:none;animation:fu .2s ease both}
+.app-pane.on{display:block}
+
+/* GUIDE */
+.guide-section{display:flex;gap:16px;margin-bottom:28px;align-items:flex-start}
+.guide-num{width:26px;height:26px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--muted2);flex-shrink:0;margin-top:2px}
+.guide-title{font-size:14px;font-weight:600;margin-bottom:6px}
+.guide-text{font-size:13px;color:var(--muted2);line-height:1.65;margin-bottom:6px}
+.guide-list{margin:6px 0 6px 16px;display:flex;flex-direction:column;gap:5px}
+.guide-list li{font-size:13px;color:var(--muted2);line-height:1.5}
+.guide-list li strong{color:var(--text);font-weight:500}
+
+/* FAQ */
+.faq-item{border-bottom:1px solid var(--border);padding:16px 0}
+.faq-item:last-child{border-bottom:none}
+.faq-q{font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text);cursor:pointer;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;line-height:1.4}
+.faq-q::after{content:'↓';font-size:11px;color:var(--muted);flex-shrink:0;margin-top:2px;transition:transform .2s}
+.faq-item.open .faq-q::after{transform:rotate(180deg)}
+.faq-a{font-size:13px;color:var(--muted2);line-height:1.65;display:none;padding-top:4px}
+.faq-item.open .faq-a{display:block}
+
+/* PAGINATION */
+.pg-btn{padding:5px 11px;border-radius:var(--rs);border:1px solid var(--border);background:transparent;color:var(--muted2);font-family:'Syne',sans-serif;font-size:12px;cursor:pointer;transition:all .15s}
+.pg-btn:hover:not(:disabled){border-color:var(--border2);color:var(--text)}
+.pg-btn:disabled{opacity:.35;cursor:default}
+.pg-btn.pg-active{background:var(--surface2);border-color:var(--border2);color:var(--text);font-weight:600}
+.pg-sep{font-size:12px;color:var(--muted);padding:0 2px}
+.pg-info{font-size:11px;color:var(--muted);margin-left:6px}
+
+@media(max-width:600px){
+  .shell{padding:0 14px 60px}
+  header{padding:24px 0 20px;flex-direction:column;align-items:flex-start;gap:10px}
+  .stats{gap:14px}
+  .sv{font-size:15px}
+  .fgrid{grid-template-columns:1fr}
+  .ffull{grid-column:1}
+  .prev-row{grid-template-columns:1fr}
+  .mbar{grid-template-columns:repeat(2,1fr)}
+  #dg{grid-template-columns:1fr}
+  .pg{grid-template-columns:repeat(2,1fr)}
+  .fw{flex-direction:column;align-items:flex-start;gap:8px}
+  .fbar{flex-wrap:wrap;gap:3px}
+  .fbtn{font-size:10px;padding:4px 10px}
+  #search-input{width:100%}
+  .hi{grid-template-columns:1fr auto auto}
+  .hi-t,.hbadge{display:none}
+  .ins-grid{grid-template-columns:repeat(2,1fr)}
+  .threshold-row{flex-wrap:wrap;gap:6px}
+  .threshold-lbl{flex:none;width:100%}
+  .cbgroup{flex-wrap:wrap}
+  .tgroup{gap:3px}
+  .tb{font-size:10px;padding:5px 9px}
+  .modal{padding:16px}
+  .stats .stat:last-child{display:none}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- TAB NAV -->
+<div style="display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:32px;overflow-x:auto;align-items:center">
+  <button class="app-tab on" data-tab="app">Tracker</button>
+  <button class="app-tab" data-tab="guide">Guide</button>
+  <button class="app-tab" data-tab="faq">FAQ</button>
+  <a href="mailto:?subject=Decision Tracker feedback" style="margin-left:auto;font-size:11px;color:var(--muted);text-decoration:none;padding:8px 4px;white-space:nowrap;flex-shrink:0" onmouseover="this.style.color='var(--muted2)'" onmouseout="this.style.color='var(--muted)'">Send feedback ↗</a>
+</div>
+
+<!-- == APP TAB == -->
+<div id="tab-app" class="app-pane on">
+
+<header>
+  <div>
+    <div class="logo-lbl">Opportunity Tracker</div>
+    <div class="logo-title">Decision <span>Tracker</span> <span style="font-size:11px;font-weight:400;color:var(--muted);letter-spacing:0;vertical-align:middle">v1.0</span></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="sv" id="s-open" style="color:var(--muted2)">0</div><div class="sl">Open deals</div></div>
+    <div class="stat"><div class="sv" id="s-upside" style="color:var(--green)">€0</div><div class="sl">Est. net upside</div></div>
+    <div class="stat"><div class="sv" id="s-bought" style="color:var(--blue)">0</div><div class="sl">Bought</div></div>
+    <div class="stat"><div class="sv" id="s-needs-update" style="color:var(--muted2)">0</div><div class="sl">Need outcome</div></div>
+  </div>
+</header>
+
+<div class="mbar">
+  <div class="mc"><span class="mc-lbl">Est. net upside</span><span class="mc-val" id="m-upside">€0</span><span class="mc-sub">Open undecided deals</span></div>
+  <div class="mc"><span class="mc-lbl">Confirmed P&amp;L</span><span class="mc-val" id="m-pnl">€0</span><span class="mc-sub">From resold buys</span></div>
+  <div class="mc"><span class="mc-lbl">Est. missed upside</span><span class="mc-val" id="m-missed">€0</span><span class="mc-sub">Bad pass estimates</span></div>
+  <div class="mc"><span class="mc-lbl">Avoided loss</span><span class="mc-val" id="m-avoided">€0</span><span class="mc-sub">Good passes (no edge)</span></div>
+  <div class="mc"><span class="mc-lbl">Needs review</span><span class="mc-val" id="m-review">0</span><span class="mc-sub">Conflicts &amp; unknowns</span></div>
+</div>
+
+<p class="slabel">Add a deal</p>
+<div class="fcard">
+  <div class="fgrid">
+    <div class="field ffull">
+      <label>Item name</label>
+      <input type="text" id="f-name" class="fi" placeholder="e.g. Charizard VMAX Alt Art, PSA 10" maxlength="80">
+    </div>
+    <div class="field">
+      <label>Listing price (€)</label>
+      <input type="number" id="f-price" class="fi" placeholder="700" min="0" step="0.01">
+    </div>
+    <div class="field">
+      <label>Your market value est. (€)</label>
+      <input type="number" id="f-market" class="fi" placeholder="7000" min="0" step="0.01">
+    </div>
+    <div class="field">
+      <label>Market confidence</label>
+      <div class="cbgroup">
+        <button class="cb low" data-conf="low">Low</button>
+        <button class="cb med on" data-conf="med">Medium</button>
+        <button class="cb high" data-conf="high">High</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Platform fee %</label>
+      <input type="number" id="f-fee" class="fi" value="12" min="0" max="100" step="0.1">
+      <span style="font-size:9px;color:var(--muted);margin-top:2px">Estimated fee for selling platform or transaction</span>
+    </div>
+    <div class="field ffull">
+      <label style="font-size:10px;letter-spacing:1.5px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;display:block">Additional costs</label>
+    </div>
+    <div class="field">
+      <label>Shipping (€)</label>
+      <input type="number" id="f-shipping" class="fi" placeholder="0" min="0" step="0.01">
+    </div>
+    <div class="field">
+      <label>Other costs (€)</label>
+      <input type="number" id="f-other" class="fi" placeholder="0" min="0" step="0.01">
+    </div>
+    <div class="field ffull">
+      <label>Notes</label>
+      <textarea id="f-notes" class="fi" placeholder="Condition, source, seller context..."></textarea>
+    </div>
+    <div class="field ffull">
+      <label>Buy trigger — flag if listing price drops to (€)</label>
+      <input type="number" id="f-trigger" class="fi" placeholder="Optional — e.g. 150" min="0" step="0.01">
+      <span style="font-size:9px;color:var(--muted);margin-top:2px">Update manually when you check the listing. Card highlights when price is at or below this.</span>
+    </div>
+  </div>
+
+  <!-- DECISION QUALITY (collapsed by default) -->
+  <button class="adv-toggle" id="adv-toggle-btn" onclick="toggleAdv()">
+    <span style="font-weight:500">Decision quality</span>
+    <span style="font-size:9px;color:var(--muted)">(optional)</span>
+    <span class="adv-badge" id="adv-badge" style="display:none">Refined</span>
+    <span class="adv-chevron">▼</span>
+  </button>
+  <div id="adv-helper" style="font-size:10px;color:var(--muted);margin-top:5px;padding:0 2px">Defaults are used unless you refine the inputs below.</div>
+  <div class="adv-body" id="adv-body">
+    <div class="fgrid" style="margin-bottom:0">
+      <div class="field ffull">
+        <label>Market value source</label>
+        <div class="tgroup" id="tg-src">
+          <div class="tb-wrap"><button class="tb on a" data-g="src" data-v="gut">Gut estimate</button><span class="tb-state is-default">Default</span></div>
+          <div class="tb-wrap"><button class="tb" data-g="src" data-v="one_comp">1 comparable sale</button><span class="tb-state is-default"></span></div>
+          <div class="tb-wrap"><button class="tb" data-g="src" data-v="three_comp">3+ comparable sales</button><span class="tb-state is-default"></span></div>
+          <div class="tb-wrap"><button class="tb" data-g="src" data-v="expert">Expert / source</button><span class="tb-state is-default"></span></div>
+        </div>
+      </div>
+      <div class="field ffull">
+        <label>Comparable quality</label>
+        <div class="tgroup" id="tg-cq">
+          <div class="tb-wrap"><button class="tb" data-g="cq" data-v="same">Same item &amp; condition</button><span class="tb-state is-default"></span></div>
+          <div class="tb-wrap"><button class="tb on a" data-g="cq" data-v="similar">Similar item</button><span class="tb-state is-default">Default</span></div>
+          <div class="tb-wrap"><button class="tb" data-g="cq" data-v="weak">Weak comparison</button><span class="tb-state is-default"></span></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Listing risk</label>
+        <div class="tgroup" id="tg-risk">
+          <div class="tb-wrap"><button class="tb" data-g="risk" data-v="low">Low</button><span class="tb-state is-default"></span></div>
+          <div class="tb-wrap"><button class="tb on a" data-g="risk" data-v="med">Medium</button><span class="tb-state is-default">Default</span></div>
+          <div class="tb-wrap"><button class="tb" data-g="risk" data-v="high">High</button><span class="tb-state is-default"></span></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Condition / authenticity clarity</label>
+        <div class="tgroup" id="tg-clar">
+          <div class="tb-wrap"><button class="tb" data-g="clar" data-v="clear">Clear</button><span class="tb-state is-default"></span></div>
+          <div class="tb-wrap"><button class="tb on a" data-g="clar" data-v="unsure">Not sure</button><span class="tb-state is-default">Default</span></div>
+          <div class="tb-wrap"><button class="tb" data-g="clar" data-v="unclear">Unclear</button><span class="tb-state is-default"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="w-extreme" class="wbanner w-extreme" style="margin-top:10px">⚠ Extreme upside detected (market &gt; 3× listing) — verify authenticity, condition, seller context and market estimate.</div>
+  <div id="w-noedge" class="wbanner w-noedge">Net upside is zero or negative after costs — this deal has no edge at current prices.</div>
+
+  <div class="prev-row">
+    <div class="prev-cell"><span class="prev-lbl">Raw upside</span><span class="prev-val" id="pv-raw" style="color:var(--muted)">—</span></div>
+    <div class="prev-cell"><span class="prev-lbl">Net upside (after costs)</span><span class="prev-val" id="pv-net" style="color:var(--muted)">—</span></div>
+  </div>
+  <button class="btn-add" id="add-btn">Add to tracker</button>
+</div>
+
+<div class="fw">
+  <p class="slabel" style="margin:0;flex:1">Deals</p>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <input id="search-input" type="text" placeholder="Search deals..." oninput="currentPage=1;render()"
+      style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:5px 11px;color:var(--text);font-family:'Syne',sans-serif;font-size:11px;outline:none;width:160px;transition:border-color .18s"
+      onfocus="this.style.borderColor='var(--border2)'" onblur="this.style.borderColor='var(--border)'">
+    <select id="sort-select" onchange="setSort(this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:5px 10px;color:var(--muted2);font-family:'Syne',sans-serif;font-size:11px;outline:none;cursor:pointer">
+      <option value="added">Sort: Date added</option>
+      <option value="net_desc">Sort: Net upside ↓</option>
+      <option value="net_asc">Sort: Net upside ↑</option>
+      <option value="price_asc">Sort: Price ↑</option>
+      <option value="price_desc">Sort: Price ↓</option>
+    </select>
+    <div class="fbar">
+      <button class="fbtn on" data-f="all">All</button>
+      <button class="fbtn" data-f="good">Strong edge</button>
+      <button class="fbtn" data-f="verify">Needs verification</button>
+      <button class="fbtn" data-f="undecided">Undecided</button>
+      <button class="fbtn" data-f="decided">Decided</button>
+    </div>
+  </div>
+</div>
+<div id="dg"></div>
+<div id="pagination" style="display:none;align-items:center;justify-content:center;gap:6px;margin-bottom:32px;flex-wrap:wrap"></div>
+
+<!-- BULK ACTION BAR (appears when deals are selected) -->
+<div id="bulk-bar" style="display:none;position:sticky;bottom:20px;z-index:100;margin:0 0 16px">
+  <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 4px 24px rgba(0,0,0,.5)">
+    <span style="font-size:12px;font-weight:500" id="bulk-count">0 selected</span>
+    <span style="font-size:11px;color:var(--muted)">Mark all as:</span>
+    <button onclick="bulkOutcome('gone')" style="padding:5px 12px;border-radius:var(--rs);border:1px solid var(--border);background:transparent;color:var(--muted2);font-family:'Syne',sans-serif;font-size:11px;cursor:pointer">No longer visible</button>
+    <button onclick="bulkOutcome('still')" style="padding:5px 12px;border-radius:var(--rs);border:1px solid var(--border);background:transparent;color:var(--muted2);font-family:'Syne',sans-serif;font-size:11px;cursor:pointer">Still listed</button>
+    <button onclick="bulkOutcome('unknown')" style="padding:5px 12px;border-radius:var(--rs);border:1px solid var(--border);background:transparent;color:var(--muted2);font-family:'Syne',sans-serif;font-size:11px;cursor:pointer">Unknown</button>
+    <button onclick="clearBulk()" style="padding:5px 12px;border-radius:var(--rs);border:none;background:transparent;color:var(--muted);font-family:'Syne',sans-serif;font-size:11px;cursor:pointer;margin-left:auto">Cancel</button>
+  </div>
+</div>
+
+<p class="slabel">Decision history</p>
+<div id="hl"></div>
+
+<div style="display:flex;justify-content:flex-end;gap:6px;margin-top:10px;margin-bottom:32px;flex-wrap:wrap">
+  <button onclick="exportJSON()" style="background:transparent;border:1px solid var(--border);border-radius:var(--rs);padding:6px 14px;color:var(--muted);font-family:'Syne',sans-serif;font-size:11px;cursor:pointer;transition:all .15s" onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--border2)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">Backup JSON ↓</button>
+  <button onclick="exportCSV()" style="background:transparent;border:1px solid var(--border);border-radius:var(--rs);padding:6px 14px;color:var(--muted);font-family:'Syne',sans-serif;font-size:11px;cursor:pointer;transition:all .15s" onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--border2)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">Export CSV ↓</button>
+  <label style="background:transparent;border:1px solid var(--border);border-radius:var(--rs);padding:6px 14px;color:var(--muted);font-family:'Syne',sans-serif;font-size:11px;cursor:pointer;transition:all .15s" onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--border2)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">
+    Import JSON ↑<input type="file" accept=".json" onchange="importJSON(event)" style="display:none">
+  </label>
+</div>
+<div style="margin-top:40px">
+  <p class="slabel">Insights</p>
+  <div class="ins-card">
+    <div class="threshold-row">
+      <span class="threshold-lbl">Minimum worthwhile profit — used for buy outcome labels and insights</span>
+      <span style="font-size:9px;color:var(--muted);margin-right:4px">€</span>
+      <input type="number" class="threshold-input" id="threshold-input" min="1" step="1" value="50">
+      <button class="threshold-save" onclick="saveThreshold()">Save</button>
+    </div>
+    <div id="insights-content">
+      <div class="ins-empty">Loading insights...</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /tab-app -->
+
+<!-- == GUIDE TAB == -->
+<div id="tab-guide" class="app-pane">
+  <div style="max-width:680px">
+    <h2 style="font-size:20px;font-weight:600;margin-bottom:6px">How to use Decision Tracker</h2>
+    <p style="font-size:13px;color:var(--muted2);margin-bottom:32px;line-height:1.6">A practical guide — read this once and you'll know everything you need.</p>
+
+    <div class="guide-section">
+      <div class="guide-num">1</div>
+      <div>
+        <div class="guide-title">Who is this for?</div>
+        <p class="guide-text">This tool is for anyone who buys and resells items — on eBay, Facebook Marketplace, car boot sales, Vinted, or any other platform. You don't need to be a professional. If you've ever thought "was that a good deal?" or "should I buy this?", this tool is for you.</p>
+        <p class="guide-text">Examples: resellers who flip second-hand goods, collectors tracking what their purchases are worth, side-hustlers testing whether flipping is profitable.</p>
+      </div>
+    </div>
+
+    <div class="guide-section">
+      <div class="guide-num">2</div>
+      <div>
+        <div class="guide-title">What does it do?</div>
+        <p class="guide-text">It helps you make better buy/pass decisions by tracking three things:</p>
+        <ul class="guide-list">
+          <li><strong>Before you decide:</strong> Is this a strong opportunity or a weak one? The app rates it based on your inputs.</li>
+          <li><strong>After you decide:</strong> What actually happened? Did you profit, miss out, or make a bad call?</li>
+          <li><strong>Over time:</strong> Are you improving? The Insights section shows patterns across all your decisions.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="guide-section">
+      <div class="guide-num">3</div>
+      <div>
+        <div class="guide-title">Adding a deal</div>
+        <p class="guide-text">When you spot a listing you're considering, add it straight away. Fill in:</p>
+        <ul class="guide-list">
+          <li><strong>Item name</strong> — describe it clearly so you recognise it later</li>
+          <li><strong>Listing price</strong> — what the seller is asking</li>
+          <li><strong>Market value estimate</strong> — what you think it would sell for (be honest)</li>
+          <li><strong>Costs</strong> — platform fee (default 12%), shipping, other costs. The app calculates net upside automatically.</li>
+          <li><strong>Buy trigger (optional)</strong> — a price at which you'd definitely buy. When you edit the deal later and the listing price hits that number, the card highlights green. Useful for deals you're watching.</li>
+          <li><strong>Notes (optional)</strong> — condition, seller context, anything relevant.</li>
+        </ul>
+        <p class="guide-text">Example: listing at €180, market value €240, 12% fee + €8 shipping = costs €29.60. Net upside = €30.40.</p>
+      </div>
+    </div>
+
+    <div class="guide-section">
+      <div class="guide-num">4</div>
+      <div>
+        <div class="guide-title">Decision quality (optional but important)</div>
+        <p class="guide-text">Tap "Decision quality" to open the advanced section. This tells the app <em>how confident you actually are</em> in your estimate. By default all fields are set to cautious values — the app will label most deals "Needs verification" until you fill this in.</p>
+        <ul class="guide-list">
+          <li><strong>Market value source</strong> — gut feeling, one sale found, 3+ comparable sales, or expert source</li>
+          <li><strong>Comparable quality</strong> — same item and condition, similar item, or weak comparison</li>
+          <li><strong>Listing risk</strong> — how risky does the listing feel (unclear photos, new seller = high)</li>
+          <li><strong>Condition / authenticity clarity</strong> — do you know exactly what you're getting?</li>
+        </ul>
+        <p class="guide-text">The app only shows <strong>Strong estimated edge</strong> when all four are strong AND the net upside is above your minimum threshold. Otherwise it shows <strong>Needs verification</strong>. Each button shows "Default" or "Refined" so you always know what you've changed.</p>
+      </div>
+    </div>
+
+    <div class="guide-section">
+      <div class="guide-num">5</div>
+      <div>
+        <div class="guide-title">Understanding the deal card</div>
+        <p class="guide-text">Each deal card shows you several things at a glance:</p>
+        <ul class="guide-list">
+          <li><strong>Edge label</strong> — Strong estimated edge / Needs verification / No edge</li>
+          <li><strong>Missing signals</strong> — exactly why a deal is not strong edge (e.g. "Risk too high", "Not enough comparable sales")</li>
+          <li><strong>Recommended action</strong> — one concrete next step based on the top failure signal</li>
+          <li><strong>Quality indicator</strong> — whether you used default assumptions, partially refined, or high-quality inputs</li>
+          <li><strong>Signal grid</strong> — four coloured dots showing source, comparable quality, risk, and clarity at a glance</li>
+          <li><strong>Buy trigger flag</strong> — green banner if the listing price is at or below your target</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="guide-section">
+      <div class="guide-num">6</div>
+      <div>
+        <div class="guide-title">Buy or Pass</div>
+        <p class="guide-text">Once you've decided, tap Buy or Pass. The app records your decision and the timestamp. You can undo if you change your mind before recording an outcome. The app never tells you what to do before you decide — it only shows estimated opportunity.</p>
+      </div>
+    </div>
+
+    <div class="guide-section">
+      <div class="guide-num">7</div>
+      <div>
+        <div class="guide-title">Recording what happened</div>
+        <p class="guide-text">After you've acted, come back and record the outcome. The options differ depending on your decision:</p>
+        <ul class="guide-list">
+          <li><strong>If you bought:</strong> "Sold — enter resale price" (confirms real profit/loss), "Still holding it", "Sold — no price data", or "Unknown"</li>
+          <li><strong>If you passed:</strong> "Listing sold — enter price" (checks your call), "Still listed", "No longer visible", or "Unknown"</li>
+        </ul>
+        <p class="guide-text">When entering a sold price after a pass, also select the reason (poor listing, seller urgency, condition issue, etc.) — this affects how the verdict is scored. A pass due to a real condition concern is treated differently from one where you just missed an undervalued deal.</p>
+        <p class="guide-text">Outcomes marked "Still holding" or "Still listed" show a prompt after 7 days reminding you to update them.</p>
+        <p class="guide-text">The app never presents guesses as confirmed facts. Estimated and confirmed data are always clearly labelled separately.</p>
+      </div>
+    </div>
+
+    <div class="guide-section">
+      <div class="guide-num">8</div>
+      <div>
+        <div class="guide-title">Managing your deals</div>
+        <ul class="guide-list">
+          <li><strong>Edit</strong> — update any field on a deal at any time (price, market value, costs, trigger, notes)</li>
+          <li><strong>Duplicate</strong> — copy a deal to use as a starting point for a similar listing</li>
+          <li><strong>Search</strong> — type in the search box to filter deals by name instantly</li>
+          <li><strong>Sort</strong> — sort by date added, net upside, or listing price</li>
+          <li><strong>Filter</strong> — show only strong edge, needs verification, undecided, or decided deals</li>
+          <li><strong>Pages</strong> — deals are shown 9 per page so the list never gets overwhelming</li>
+          <li><strong>Bulk update</strong> — check multiple decided deals and mark them all as "No longer visible", "Still listed", or "Unknown" at once</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="guide-section">
+      <div class="guide-num">9</div>
+      <div>
+        <div class="guide-title">Reading your insights</div>
+        <p class="guide-text">The Insights section (bottom of the Tracker tab) shows patterns after a few completed decisions. You'll see:</p>
+        <ul class="guide-list">
+          <li>A summary grid — total decisions, buys, passes, confirmed P&L, estimated missed upside, needs review</li>
+          <li>A profit-over-time chart (confirmed buys only)</li>
+          <li>A decision breakdown bar chart</li>
+          <li>A confidence vs outcome comparison</li>
+          <li>Up to 3 detected patterns — e.g. "You often accept small wins", "Your high-confidence deals perform better"</li>
+        </ul>
+        <p class="guide-text">Confirmed P&L only ever counts deals with a real resale price. Estimated figures are always labelled as such. The two are never mixed.</p>
+        <p class="guide-text">You can also set your <strong>minimum worthwhile profit</strong> in the Insights section. This changes what counts as a "Good buy" vs a "Small win" across the whole app.</p>
+      </div>
+    </div>
+
+    <div class="guide-section">
+      <div class="guide-num">10</div>
+      <div>
+        <div class="guide-title">Backing up and restoring your data</div>
+        <p class="guide-text">Your data is saved in your browser only. If you clear your browser data or switch devices, it is gone. Three buttons sit below the decision history:</p>
+        <ul class="guide-list">
+          <li><strong>Backup JSON</strong> — saves all deals, decisions, outcomes, and your threshold setting to a file</li>
+          <li><strong>Export CSV</strong> — exports a spreadsheet you can open in Excel or Google Sheets</li>
+          <li><strong>Import JSON</strong> — restores from a backup file. Merges with existing deals — duplicates are skipped automatically</li>
+        </ul>
+        <p class="guide-text">Back up regularly. Once browser data is cleared, it cannot be recovered.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- == FAQ TAB == -->
+<div id="tab-faq" class="app-pane">
+  <div style="max-width:680px">
+    <h2 style="font-size:20px;font-weight:600;margin-bottom:6px">Frequently asked questions</h2>
+    <p style="font-size:13px;color:var(--muted2);margin-bottom:32px">Answers to the questions most users have.</p>
+
+    <div class="faq-item">
+      <div class="faq-q">Is my data safe? Can anyone else see it?</div>
+      <div class="faq-a">Yes. Your data is stored only in your own browser's local storage — on your device, not on any server. This is true whether you use the hosted version on GitHub Pages or a downloaded file. GitHub cannot see your deals. Nobody can. The downside is that if you clear your browser data or switch devices, it is gone. Use Backup JSON regularly and keep the file somewhere safe.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What is the difference between the hosted version and downloading the file?</div>
+      <div class="faq-a">They are the same app. The hosted version at designlabzai-jpg.github.io/Decision-tool runs directly in your browser without needing to download anything — easier to share and open on any device. The downloaded HTML file works the same way but offline. Your data stays in your browser either way and is never sent anywhere. One thing to note: if you use the hosted version on a different browser or device than usual, your saved deals will not be there — they are tied to the specific browser you used.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Why does the app never say "this is a good deal" before I decide?</div>
+      <div class="faq-a">Because it cannot know. Your market value estimate might be wrong, the item might have hidden flaws, or the seller might not be trustworthy. The app shows estimated opportunity — strong or weak — but the final judgment is always yours. It only evaluates your decision after you record what actually happened.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What is "net upside" and why is it different from raw profit?</div>
+      <div class="faq-a">Raw upside is market value minus listing price. Net upside is what's left after subtracting platform fee, shipping, and other costs. A deal with €60 raw upside might only have €30 net — that's what you'd actually keep. The app always uses net upside for decisions and edge classification.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What does "Needs verification" mean?</div>
+      <div class="faq-a">It means the deal has positive net upside but the app isn't confident enough to call it a strong opportunity. One or more quality signals are weak — for example, your estimate is based on a gut feeling, or the condition is unclear. The card shows exactly which signals are missing. Open the Decision quality section, improve the inputs, and it may upgrade.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What is "Strong estimated edge"?</div>
+      <div class="faq-a">The app's highest pre-decision rating. All of these must be true: net upside is at or above your minimum threshold, market estimate is based on 3+ comparable sales or an expert source, comparison is same item and condition, risk is low or medium, condition/authenticity is clear, and you intentionally filled in the Decision quality section. It still says "estimated" because nothing is confirmed until you buy and resell.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What are "Missing signals" on a card?</div>
+      <div class="faq-a">These are the specific reasons why a deal is not classified as Strong estimated edge — for example "Risk too high" or "Not enough comparable sales". They map directly to the Decision quality inputs. Fix the underlying issue (do more research, verify condition) or update your inputs if you've done that work.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What is the "Recommended action"?</div>
+      <div class="faq-a">A single suggested next step based on the most important missing signal. Examples: "Ask for better proof, photos, or verification", "Find more comparable outcomes before deciding", "Skip — no upside after costs". It's a prompt, not a command — the decision is always yours.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What is the buy trigger?</div>
+      <div class="faq-a">A price you set on a deal — if the listing price drops to that level, the card shows a green flag. The app doesn't monitor prices automatically. You update the listing price manually (via Edit) when you check the listing, and the flag appears instantly if it's hit your target. Useful for deals you're watching but haven't acted on yet.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What is the minimum profit threshold?</div>
+      <div class="faq-a">A number you set in the Insights section (default €50). It defines what counts as a worthwhile profit. Confirmed buys below this are labelled "Small win" rather than "Good buy". It also affects edge classification — a deal with net upside below your threshold will never be Strong estimated edge. Change it any time to match your standards.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What is "Outcome conflict"?</div>
+      <div class="faq-a">This appears when the final sold price is very different from your market value estimate — more than 40% lower or higher than expected. The app refuses to score this as a simple good or bad call because something unusual likely happened. It might mean your estimate was off, or the item sold for a non-market reason (damaged, urgent seller, wrong category listing). Review before drawing conclusions.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">I passed on a deal and it sold above the listing price. Is that always a missed opportunity?</div>
+      <div class="faq-a">Not necessarily. If you recorded a reason like "condition issue" or "authenticity concern", the verdict softens to "Pass may have been reasonable" — the risk was real even if the sale went through. All other reasons (poor listing, seller urgency, etc.) result in "Missed opportunity" since the upside was there and you passed.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Why does the outcome section look different for Buy vs Pass?</div>
+      <div class="faq-a">Because the questions are different. After a Buy, you record your resale price — the app confirms your actual profit or loss. After a Pass, you record what the listing sold for (if you know) — the app checks whether your decision was correct. The framing, labels, and fields all reflect which side of the decision you were on.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What happens to "Still holding" or "Still listed" deals?</div>
+      <div class="faq-a">They are not counted as good or bad — just paused. After 7 days a prompt appears on the card reminding you to check and update the outcome. Use the bulk selection feature to update multiple stale deals at once.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Can I use this for things other than eBay?</div>
+      <div class="faq-a">Yes. The app is platform-neutral. It works for any buying and reselling context — Facebook Marketplace, Vinted, local auctions, car boot sales, trading cards, electronics, clothing. The "Platform fee %" field covers any selling commission regardless of where you sell.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Why don't prices update automatically?</div>
+      <div class="faq-a">The app has no connection to any platform or API. All prices are entered manually. This keeps it simple, private, and free. The buy trigger feature is the closest equivalent — it flags when you manually update a price to your target level.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">I have a lot of old deals with no outcome. What should I do?</div>
+      <div class="faq-a">Use bulk selection. Check the boxes on multiple decided cards, then use the action bar that appears at the bottom to mark them all at once — "No longer visible", "Still listed", or "Unknown". This cleans up your tracker and makes the Insights section more accurate.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">How do I move my data to another device?</div>
+      <div class="faq-a">Click "Backup JSON" to download your data. Open the app on the new device, click "Import JSON", and select that file. All deals, decisions, and outcomes are restored. Duplicates are automatically skipped if you import the same file twice.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What does "Confirmed P&L" mean in the metrics?</div>
+      <div class="faq-a">Confirmed profit and loss — calculated only from buy decisions where you've entered a real resale price. It never includes estimates or guesses. "Estimated missed upside" is shown separately and always labelled as estimated. The two are never added together.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">The deals are paginated — how many show per page?</div>
+      <div class="faq-a">9 deals per page (3 rows of 3). Use the page buttons below the grid to navigate. The page resets to 1 whenever you change a filter, sort order, or search term. Clicking a page number scrolls back to the top of the grid automatically.</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /shell -->
+
+<!-- EDIT MODAL -->
+<div class="modal-bg" id="edit-modal" onclick="closeEditIfBg(event)">
+  <div class="modal">
+    <div class="modal-title">Edit deal</div>
+    <div class="fgrid">
+      <div class="field ffull"><label>Item name</label><input type="text" id="e-name" class="fi" maxlength="80"></div>
+      <div class="field"><label>Listing price (€)</label><input type="number" id="e-price" class="fi" min="0" step="0.01"></div>
+      <div class="field"><label>Market value est. (€)</label><input type="number" id="e-market" class="fi" min="0" step="0.01"></div>
+      <div class="field"><label>Platform fee %</label><input type="number" id="e-fee" class="fi" min="0" max="100" step="0.1"></div>
+      <div class="field"><label>Shipping (€)</label><input type="number" id="e-ship" class="fi" min="0" step="0.01"></div>
+      <div class="field"><label>Other costs (€)</label><input type="number" id="e-other" class="fi" min="0" step="0.01"></div>
+      <div class="field ffull"><label>Notes</label><textarea id="e-notes" class="fi" style="min-height:54px;resize:none"></textarea></div>
+      <div class="field ffull"><label>Buy trigger (€)</label><input type="number" id="e-trigger" class="fi" min="0" step="0.01" placeholder="Optional — flag when price drops to this"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-save" onclick="saveEdit()">Save changes</button>
+      <button class="btn-cancel" onclick="closeEdit()">Cancel</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+var deals = [];
+try{ deals = JSON.parse(localStorage.getItem('dtv3')||'[]'); }catch(e){ deals=[]; }
+var activeFilter = 'all';
+var activeSort   = 'added';
+var currentPage  = 1;
+var PAGE_SIZE    = 9;
+var formConf = 'med';
+var formSrc  = 'gut';
+var formCq   = 'similar';
+var formRisk = 'med';
+var formClar = 'unsure';
+var formAdvOpened = false;
+var profitThreshold = 50;
+try{ var _t=parseInt(localStorage.getItem('dt_threshold')); if(!isNaN(_t)&&_t>0){ profitThreshold=_t; } }catch(e){}
+// sync input to stored value
+window.addEventListener('DOMContentLoaded',function(){
+  var ti=document.getElementById('threshold-input');
+  if(ti) ti.value=profitThreshold;
+});
+
+function save(){ try{ localStorage.setItem('dtv3', JSON.stringify(deals)); }catch(e){} }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+// -- EDIT DEAL 
+var editingId = null;
+function openEdit(id){
+  var d=deals.find(function(x){return x.id===id;}); if(!d) return;
+  editingId=id;
+  document.getElementById('e-name').value  = d.name||'';
+  document.getElementById('e-price').value = d.price!=null?d.price:'';
+  document.getElementById('e-market').value= d.market!=null?d.market:'';
+  document.getElementById('e-fee').value   = d.fee!=null?d.fee:12;
+  document.getElementById('e-ship').value  = d.ship||0;
+  document.getElementById('e-other').value = d.other||0;
+  document.getElementById('e-notes').value = d.notes||'';
+  document.getElementById('e-trigger').value = d.trigger!=null?d.trigger:'';
+  document.getElementById('edit-modal').classList.add('open');
+}
+function saveEdit(){
+  var d=deals.find(function(x){return x.id===editingId;}); if(!d) return;
+  var name  = document.getElementById('e-name').value.trim();
+  var price = parseFloat(document.getElementById('e-price').value);
+  var market= parseFloat(document.getElementById('e-market').value);
+  if(!name)        { toast('Enter item name','var(--red)'); return; }
+  if(isNaN(price)) { toast('Enter listing price','var(--red)'); return; }
+  if(isNaN(market)){ toast('Enter market value','var(--red)'); return; }
+  d.name   = name;
+  d.price  = price;
+  d.market = market;
+  d.fee    = parseFloat(document.getElementById('e-fee').value)||12;
+  d.ship   = parseFloat(document.getElementById('e-ship').value)||0;
+  d.other  = parseFloat(document.getElementById('e-other').value)||0;
+  d.notes  = document.getElementById('e-notes').value.trim();
+  var et = parseFloat(document.getElementById('e-trigger').value);
+  d.trigger = isNaN(et)?null:et;
+  save(); render(); closeEdit();
+  toast('Deal updated','var(--green)');
+}
+function closeEdit(){
+  editingId=null;
+  document.getElementById('edit-modal').classList.remove('open');
+}
+function closeEditIfBg(e){
+  if(e.target===document.getElementById('edit-modal')) closeEdit();
+}
+
+function eur(n){
+  if(n==null||isNaN(n)) return '—';
+  var a=Math.abs(n), s=a%1===0?a.toString():a.toFixed(2);
+  return (n<0?'-':'')+'€'+s;
+}
+function fmtTime(ts){
+  if(!ts) return '';
+  var d=new Date(ts),now=new Date(),diff=now-d;
+  if(diff<60000) return 'just now';
+  if(diff<3600000) return Math.floor(diff/60000)+'m ago';
+  if(diff<86400000) return Math.floor(diff/3600000)+'h ago';
+  return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+}
+
+function toast(msg, col){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.style.borderColor=col||'var(--border2)';
+  t.classList.add('on'); clearTimeout(t._t);
+  t._t=setTimeout(function(){t.classList.remove('on');},2400);
+}
+function flashField(id,msg){
+  var el=document.getElementById(id); if(!el) return;
+  el.style.borderColor='var(--red)'; el.focus();
+  setTimeout(function(){el.style.borderColor='';},1400);
+  toast(msg,'var(--red)');
+}
+function esc(s){
+  if(!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// -- COST CALC 
+function cCosts(d){ return d.price*((d.fee!=null?d.fee:12)/100)+(d.ship||0)+(d.other||0); }
+function cRaw(d){ return d.market-d.price; }
+function cNet(d){ return cRaw(d)-cCosts(d); }
+
+// -- SAFE DEFAULTS (backward compat) 
+function dSrc(d)  { return d.src  || 'gut'; }
+function dCq(d)   { return d.cq   || 'similar'; }
+function dRisk(d) { return d.risk || 'med'; }
+function dClar(d) { return d.clar || 'unsure'; }
+function dConf(d) { return d.conf || 'med'; }
+
+// -- EDGE FAILURE REASONS ─
+// Returns ordered array of reasons why a deal is NOT strong estimated edge.
+// Does NOT change edgeTier logic — explanation layer only.
+function getEdgeFailures(d){
+  var reasons=[];
+  var net=cNet(d);
+
+  // Priority order: risk → clarity → source → comp quality → confidence → upside → adv
+  if(dRisk(d)==='high')                              reasons.push('Risk too high');
+  if(dClar(d)!=='clear')                             reasons.push('Condition / authenticity not clear');
+  if(dSrc(d)==='gut'||dSrc(d)==='one_comp')          reasons.push('Not enough comparable sales');
+  if(dCq(d)!=='same')                                reasons.push('Weak comparison quality');
+  if(dConf(d)==='low')                               reasons.push('Low confidence in market value');
+  if(net<profitThreshold)                            reasons.push('Upside below minimum threshold ('+eur(net)+' < '+eur(profitThreshold)+')');
+  if(!d.advOpened)                                   reasons.push('Advanced inputs not filled in');
+
+  return reasons.slice(0,3); // max 3
+}
+
+// -- RECOMMENDED ACTION ─
+// Uses edgeTier + getEdgeFailures — no separate logic.
+function getRecommendedAction(d){
+  var et=edgeTier(d);
+  if(et==='strong_edge') return {text:'All signals aligned — ready to decide.',style:'g'};
+  if(et==='no_edge')     return {text:'Skip — no upside after costs.',style:'r'};
+  // needs_verify: map highest-priority failure to a concrete action
+  var fails=getEdgeFailures(d);
+  var first=fails[0]||'';
+  var actionMap=[
+    ['Advanced inputs not filled in',    'Refine decision quality inputs first.'],
+    ['Upside below minimum threshold',   'Skip — upside is below your threshold.'],
+    ['Risk too high',                    'Skip or investigate the risk first.'],
+    ['Condition / authenticity not clear','Ask for better proof, photos, or verification.'],
+    ['Not enough comparable sales',      'Find more comparable outcomes before deciding.'],
+    ['Weak comparison quality',          'Compare against closer matches.'],
+    ['Low confidence in market value',   'Do not act until confidence improves.']
+  ];
+  var text='Verify weak signals before acting.';
+  actionMap.forEach(function(pair){
+    if(first.indexOf(pair[0])===0) text=pair[1];
+  });
+  return {text:text,style:'a'};
+}
+// BEFORE OUTCOME ONLY. Never says "Good buy" / "Bad buy" etc.
+// Labels: strong_edge / needs_verify / no_edge
+function edgeTier(d){
+  var net = cNet(d);
+  if(net <= 0) return 'no_edge';
+
+  // Below minimum threshold → not a strong edge
+  var aboveThreshold = net >= profitThreshold;
+
+  // Strong edge requires ALL of:
+  var strongConf  = dConf(d)==='high'||dConf(d)==='med';
+  var strongSrc   = dSrc(d)==='three_comp'||dSrc(d)==='expert';
+  var strongCq    = dCq(d)==='same';
+  var safeRisk    = dRisk(d)==='low'||dRisk(d)==='med';
+  var clearClar   = dClar(d)==='clear';
+  var advWasOpen  = !!d.advOpened; // must have intentionally filled advanced checks
+
+  var extremeGap  = d.market >= d.price * 3;
+
+  // If extreme gap exists, require High confidence (not just medium)
+  if(extremeGap){
+    var extremeOk = dConf(d)==='high' && strongSrc && strongCq && clearClar && safeRisk;
+    if(!extremeOk) return 'needs_verify';
+  }
+
+  if(aboveThreshold && strongConf && strongSrc && strongCq && safeRisk && clearClar && advWasOpen){
+    return 'strong_edge';
+  }
+  return 'needs_verify';
+}
+// legacy shim for filter/tier compat
+function tier(d){ var e=edgeTier(d); return e==='strong_edge'?'good':e==='no_edge'?'bad':'neutral'; }
+
+// -- FORM PREVIEW 
+function updatePrev(){
+  var price=parseFloat(document.getElementById('f-price').value);
+  var market=parseFloat(document.getElementById('f-market').value);
+  var fee=parseFloat(document.getElementById('f-fee').value)||12;
+  var ship=parseFloat(document.getElementById('f-shipping').value)||0;
+  var other=parseFloat(document.getElementById('f-other').value)||0;
+  var rawEl=document.getElementById('pv-raw'), netEl=document.getElementById('pv-net');
+  var wx=document.getElementById('w-extreme'), wn=document.getElementById('w-noedge');
+  if(isNaN(price)||isNaN(market)){
+    rawEl.textContent='—'; rawEl.style.color='var(--muted)';
+    netEl.textContent='—'; netEl.style.color='var(--muted)';
+    wx.classList.remove('on'); wn.classList.remove('on'); return;
+  }
+  var raw=market-price, costs=price*(fee/100)+ship+other, net=raw-costs;
+  rawEl.textContent=eur(raw); rawEl.style.color=raw>0?'var(--green)':raw<0?'var(--red)':'var(--amber)';
+  netEl.textContent=eur(net); netEl.style.color=net>20?'var(--green)':net>0?'var(--amber)':'var(--red)';
+  wx.classList.toggle('on', market>price*3);
+  wn.classList.toggle('on', !isNaN(net)&&net<=0);
+}
+
+['f-price','f-market','f-fee','f-shipping','f-other'].forEach(function(id){
+  var el=document.getElementById(id); if(el) el.addEventListener('input',updatePrev);
+});
+
+// -- CONFIDENCE 
+document.querySelectorAll('.cb').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    formConf=this.dataset.conf;
+    document.querySelectorAll('.cb').forEach(function(b){b.classList.remove('on');});
+    this.classList.add('on');
+  });
+});
+
+// -- ADVANCED TOGGLE 
+function toggleAdv(){
+  var btn=document.getElementById('adv-toggle-btn');
+  var body=document.getElementById('adv-body');
+  if(!btn||!body) return;
+  var isOpen=body.classList.contains('open');
+  body.classList.toggle('open',!isOpen);
+  btn.classList.toggle('open',!isOpen);
+  if(!isOpen) formAdvOpened=true;
+}
+
+// -- TOGGLE GROUPS (src / cq / risk / clar) 
+// Default values per group — used to detect whether user changed something
+var DEFAULTS={src:'gut',cq:'similar',risk:'med',clar:'unsure'};
+var riskColor={low:'g',med:'a',high:'r'};
+var clarColor={clear:'g',unsure:'a',unclear:'r'};
+var srcColor={gut:'a',one_comp:'',three_comp:'g',expert:'g'};
+document.querySelectorAll('.tb').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var g=this.dataset.g, v=this.dataset.v;
+    if(!g) return;
+    // deactivate all in group
+    document.querySelectorAll('.tb[data-g="'+g+'"]').forEach(function(b){
+      b.classList.remove('on','g','a','r','refined');
+    });
+    // reset all state labels in group
+    document.querySelectorAll('.tb[data-g="'+g+'"]').forEach(function(b){
+      var wrap=b.parentElement;
+      if(wrap&&wrap.classList.contains('tb-wrap')){
+        var lbl=wrap.querySelector('.tb-state');
+        if(lbl){ lbl.textContent=''; lbl.className='tb-state is-default'; }
+      }
+    });
+    // activate clicked
+    this.classList.add('on');
+    if(g==='risk'){ var c=riskColor[v]||''; if(c) this.classList.add(c); }
+    if(g==='clar'){ var c=clarColor[v]||''; if(c) this.classList.add(c); }
+    if(g==='src'){  var c=srcColor[v]||'';  if(c) this.classList.add(c); }
+    // mark as refined or default
+    var isDefault = (DEFAULTS[g]===v);
+    var wrap=this.parentElement;
+    if(wrap&&wrap.classList.contains('tb-wrap')){
+      var lbl=wrap.querySelector('.tb-state');
+      if(lbl){
+        if(isDefault){
+          lbl.textContent='Default'; lbl.className='tb-state is-default';
+        } else {
+          lbl.textContent='Refined'; lbl.className='tb-state is-refined';
+          this.classList.add('refined');
+        }
+      }
+    }
+    // update state vars
+    if(g==='src')  formSrc=v;
+    if(g==='cq')   formCq=v;
+    if(g==='risk') formRisk=v;
+    if(g==='clar') formClar=v;
+    // show "Refined" badge on toggle header once any non-default value is selected
+    var anyRefined = formSrc!==DEFAULTS.src||formCq!==DEFAULTS.cq||formRisk!==DEFAULTS.risk||formClar!==DEFAULTS.clar;
+    var badge=document.getElementById('adv-badge');
+    if(badge){ badge.style.display=anyRefined?'inline-block':'none'; }
+  });
+});
+
+// -- ADD DEAL 
+document.getElementById('add-btn').addEventListener('click', addDeal);
+document.getElementById('f-name').addEventListener('keydown',function(e){if(e.key==='Enter')addDeal();});
+
+function addDeal(){
+  var name=document.getElementById('f-name').value.trim();
+  var price=parseFloat(document.getElementById('f-price').value);
+  var market=parseFloat(document.getElementById('f-market').value);
+  var fee=parseFloat(document.getElementById('f-fee').value);
+  var ship=parseFloat(document.getElementById('f-shipping').value)||0;
+  var other=parseFloat(document.getElementById('f-other').value)||0;
+  var notes=document.getElementById('f-notes').value.trim();
+
+  if(!name){ flashField('f-name','Enter item name'); return; }
+  if(isNaN(price)){ flashField('f-price','Enter listing price'); return; }
+  if(isNaN(market)){ flashField('f-market','Enter market value'); return; }
+
+  var trigger = parseFloat(document.getElementById('f-trigger').value);
+  var deal={
+    id:uid(), name:name, price:price, market:market,
+    fee:isNaN(fee)?12:fee, ship:ship, other:other, notes:notes,
+    trigger: isNaN(trigger)?null:trigger,
+    conf:formConf, src:formSrc, cq:formCq, risk:formRisk, clar:formClar,
+    advOpened:formAdvOpened,
+    created:Date.now(),
+    decision:null, decisionTime:null, outcome:null
+  };
+  deals.unshift(deal); save();
+  ['f-name','f-price','f-shipping','f-other','f-notes','f-trigger'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('f-fee').value='12';
+  document.getElementById('f-market').value='';
+  formConf='med'; formSrc='gut'; formCq='similar'; formRisk='med'; formClar='unsure'; formAdvOpened=false;
+  document.querySelectorAll('.cb').forEach(function(b){b.classList.remove('on');});
+  document.querySelector('.cb.med').classList.add('on');
+  // close advanced panel and reset to pessimistic defaults
+  var advBody=document.getElementById('adv-body'), advBtn=document.getElementById('adv-toggle-btn');
+  if(advBody){ advBody.classList.remove('open'); }
+  if(advBtn){ advBtn.classList.remove('open'); }
+  var advBadge=document.getElementById('adv-badge');
+  if(advBadge) advBadge.style.display='none';
+  var resetMap=[['src','gut','a'],['cq','similar','a'],['risk','med','a'],['clar','unsure','a']];
+  var defLabels={gut:'Default',similar:'Default',med:'Default',unsure:'Default'};
+  resetMap.forEach(function(t){
+    document.querySelectorAll('.tb[data-g="'+t[0]+'"]').forEach(function(b){
+      b.classList.remove('on','g','a','r','refined');
+      var wrap=b.parentElement;
+      if(wrap&&wrap.classList.contains('tb-wrap')){
+        var lbl=wrap.querySelector('.tb-state');
+        if(lbl){ lbl.textContent=''; lbl.className='tb-state is-default'; }
+      }
+    });
+    var def=document.querySelector('.tb[data-g="'+t[0]+'"][data-v="'+t[1]+'"]');
+    if(def){
+      def.classList.add('on'); if(t[2]) def.classList.add(t[2]);
+      var wrap=def.parentElement;
+      if(wrap&&wrap.classList.contains('tb-wrap')){
+        var lbl=wrap.querySelector('.tb-state');
+        if(lbl){ lbl.textContent='Default'; lbl.className='tb-state is-default'; }
+      }
+    }
+  });
+  updatePrev(); render();
+  toast('Deal added','var(--green)');
+}
+
+// -- FILTER 
+document.querySelectorAll('.fbtn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    activeFilter=this.dataset.f;
+    currentPage=1;
+    document.querySelectorAll('.fbtn').forEach(function(b){b.classList.remove('on');});
+    this.classList.add('on');
+    render();
+  });
+});
+
+// -- SORT 
+function setSort(val){ activeSort=val; currentPage=1; render(); }
+function decide(id, choice){
+  var d=deals.find(function(x){return x.id===id;}); if(!d) return;
+  d.decision=choice; d.decisionTime=Date.now(); d.outcome=null;
+  save(); render();
+  toast(choice==='buy'?'✓ Marked as Buy':'→ Passed', choice==='buy'?'var(--green)':'var(--border2)');
+}
+function undoDecide(id){
+  var d=deals.find(function(x){return x.id===id;}); if(!d) return;
+  d.decision=null; d.decisionTime=null; d.outcome=null;
+  save(); render(); toast('Decision cleared');
+}
+function delDeal(id){
+  deals=deals.filter(function(x){return x.id!==id;});
+  save(); render(); toast('Deal removed','var(--red)');
+}
+function dupDeal(id){
+  var src=deals.find(function(x){return x.id===id;}); if(!src) return;
+  var copy=JSON.parse(JSON.stringify(src));
+  copy.id=uid();
+  copy.created=Date.now();
+  copy.decision=null; copy.decisionTime=null; copy.outcome=null;
+  deals.unshift(copy); save(); render();
+  toast('Deal duplicated — decision and outcome cleared','var(--green)');
+}
+
+// -- TABS 
+document.querySelectorAll('.app-tab').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.app-tab').forEach(function(b){b.classList.remove('on');});
+    document.querySelectorAll('.app-pane').forEach(function(p){p.classList.remove('on');});
+    this.classList.add('on');
+    document.getElementById('tab-'+this.dataset.tab).classList.add('on');
+  });
+});
+// FAQ accordion
+document.querySelectorAll('.faq-q').forEach(function(q){
+  q.addEventListener('click',function(){
+    this.parentElement.classList.toggle('open');
+  });
+});
+var bulkSelected=[];
+function toggleBulkSelect(id){
+  var idx=bulkSelected.indexOf(id);
+  if(idx===-1) bulkSelected.push(id); else bulkSelected.splice(idx,1);
+  var bar=document.getElementById('bulk-bar');
+  var cnt=document.getElementById('bulk-count');
+  if(bulkSelected.length>0){
+    bar.style.display='block';
+    if(cnt) cnt.textContent=bulkSelected.length+' selected';
+  } else {
+    bar.style.display='none';
+  }
+}
+function bulkOutcome(type){
+  if(bulkSelected.length===0) return;
+  var count=0;
+  bulkSelected.forEach(function(id){
+    var d=deals.find(function(x){return x.id===id;});
+    if(d&&d.decision){ d.outcome={type:type,setAt:Date.now()}; count++; }
+  });
+  save();
+  clearBulk();
+  render();
+  var labels={gone:'No longer visible',still:'Still listed',unknown:'Unknown'};
+  toast(count+' deals marked as "'+labels[type]+'"','var(--green)');
+}
+function clearBulk(){
+  bulkSelected=[];
+  document.getElementById('bulk-bar').style.display='none';
+  // uncheck all checkboxes
+  document.querySelectorAll('[id^="chk-"]').forEach(function(c){c.checked=false;});
+}
+function showSoldForm(id){
+  var el=document.getElementById('sf-'+id); if(!el) return;
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+function saveOther(id, type){
+  var d=deals.find(function(x){return x.id===id;}); if(!d) return;
+  d.outcome={type:type, setAt:Date.now()}; save(); render();
+  var msgs={still:['Still available — not counted','var(--blue)'],gone:['No longer visible — estimate applied','var(--amber)'],unknown:['Unknown — needs review','var(--muted2)']};
+  var m=msgs[type]||['Outcome saved','var(--border2)'];
+  toast(m[0],m[1]);
+}
+function confirmSold(id){
+  var d=deals.find(function(x){return x.id===id;}); if(!d) return;
+  var pi=document.getElementById('sp-'+id), ri=document.getElementById('sr-'+id);
+  if(!pi) return;
+  var val=parseFloat(pi.value);
+  if(isNaN(val)||val<0){ pi.style.borderColor='var(--red)'; setTimeout(function(){pi.style.borderColor='';},1400); toast('Enter a valid price','var(--red)'); return; }
+  var reason=ri?ri.value:'unknown';
+  if(d.decision==='buy'){
+    d.outcome={type:'sold', userResalePrice:val, reason:reason};
+  } else {
+    d.outcome={type:'sold', finalSoldPrice:val, reason:reason};
+  }
+  save(); render();
+  var ev=evalD(d);
+  if(ev){
+    var tm={
+      good_buy:    'Good buy — profit '+eur(ev.cp),
+      small_win:   'Small win — profit '+eur(ev.cp)+' (under '+eur(profitThreshold)+')',
+      bad_buy:     'Bad buy — loss '+eur(Math.abs(ev.cp)),
+      good_pass:    'Good pass — correct decision',
+      pass_reasonable:'Pass may have been reasonable — review suggested',
+      missed_opp:  'Missed opportunity — potential profit '+eur(ev.potentialProfit),
+      conflict:    'Outcome conflict — needs review',
+      est_only:    'Estimated only — not confirmed',
+    };
+    var goodV=['good_buy','good_pass'], badV=['bad_buy','missed_opp'];
+    toast(tm[ev.v]||'Outcome saved', goodV.indexOf(ev.v)!==-1?'var(--green)':badV.indexOf(ev.v)!==-1?'var(--red)':'var(--amber)');
+  }
+}
+function clearOutcome(id){
+  var d=deals.find(function(x){return x.id===id;}); if(!d) return;
+  d.outcome=null; save(); render(); toast('Outcome cleared');
+}
+
+// -- EVAL ─
+// Called ONLY after outcome exists.
+// BEFORE outcome: use edgeTier() for classification.
+var RLABELS={
+  unknown:'Unknown',sold_normally:'Sold normally',sold_below_ask:'Sold below ask / offer accepted',
+  seller_urgency:'Seller urgency',poor_listing:'Poor listing / photos / title',
+  condition_issue:'Condition issue discovered',authenticity_concern:'Authenticity concern',
+  estimate_wrong:'Market estimate was probably wrong'
+};
+
+function evalD(d){
+  if(!d.decision||!d.outcome) return null;
+  var oc=d.outcome;
+  var costs=cCosts(d), net=cNet(d);
+
+  // -- BUY 
+  if(d.decision==='buy'){
+    if(oc.type==='sold'&&oc.userResalePrice!=null){
+      var cp = oc.userResalePrice - d.price - costs;
+      var bv = cp<=0 ? 'bad_buy' : cp<profitThreshold ? 'small_win' : 'good_buy';
+      return {v:bv, cp:cp, resalePrice:oc.userResalePrice};
+    }
+    // still / unknown / gone with no resale = pending
+    return {v:'buy_pending'};
+  }
+
+  // -- PASS ─
+  if(d.decision==='pass'){
+
+    if(oc.type==='sold'&&oc.finalSoldPrice!=null){
+      var fsp = oc.finalSoldPrice;
+      var potentialProfit = fsp - d.price - costs;
+      var reason = oc.reason||'unknown';
+
+      // Conflict check: final sale differs strongly from market estimate
+      var conflictLow  = fsp < d.market * 0.6;
+      var conflictHigh = fsp > d.market * 1.4;
+      var hasConflict  = conflictLow || conflictHigh;
+
+      if(hasConflict){
+        return {v:'conflict', potentialProfit:potentialProfit, fsp:fsp, net:net, reason:reason};
+      }
+
+      if(potentialProfit > 0){
+        // If reason suggests real risk, soften the missed_opp verdict
+        var riskReason = reason==='condition_issue'||reason==='authenticity_concern';
+        return {
+          v: riskReason ? 'pass_reasonable' : 'missed_opp',
+          potentialProfit:potentialProfit, fsp:fsp, net:net, reason:reason
+        };
+      } else {
+        return {v:'good_pass', potentialProfit:potentialProfit, fsp:fsp, net:net, reason:reason};
+      }
+    }
+
+    if(oc.type==='gone'){
+      // No final price known — estimate only from market value
+      var estUpside = net; // cNet already = marketValue - listingPrice - costs
+      return {v:'est_only', estUpside:estUpside, net:net};
+    }
+    if(oc.type==='still'){
+      var daysStale = oc.setAt ? Math.floor((Date.now()-oc.setAt)/86400000) : null;
+      return {v:'still', daysStale:daysStale};
+    }
+    if(oc.type==='unknown') return {v:'outcome_unknown'};
+  }
+
+  return null;
+}
+
+// -- EXPORT 
+function exportCSV(){
+  var headers=['Name','Listing price','Market value','Net upside','Fee %','Shipping','Other costs','Confidence','Decision','Decision date','Outcome type','Final sold price','Resale price','Confirmed P&L','Edge tier','Notes'];
+  var rows=[headers];
+  deals.forEach(function(d){
+    var net=cNet(d);
+    var ev=evalD(d);
+    var pnl='';
+    if(ev&&(ev.v==='good_buy'||ev.v==='small_win'||ev.v==='bad_buy')) pnl=ev.cp.toFixed(2);
+    var oc=d.outcome||{};
+    rows.push([
+      csvCell(d.name),
+      d.price!=null?d.price:'',
+      d.market!=null?d.market:'',
+      net.toFixed(2),
+      d.fee!=null?d.fee:12,
+      d.ship||0,
+      d.other||0,
+      d.conf||'med',
+      d.decision||'',
+      d.decisionTime?new Date(d.decisionTime).toLocaleDateString('en-GB'):'',
+      oc.type||'',
+      oc.finalSoldPrice!=null?oc.finalSoldPrice:'',
+      oc.userResalePrice!=null?oc.userResalePrice:'',
+      pnl,
+      edgeTier(d),
+      csvCell(d.notes||'')
+    ].join(','));
+  });
+  var csv=rows.join('\r\n');
+  var blob=new Blob([csv],{type:'text/csv'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download='decision-tracker-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click(); URL.revokeObjectURL(url);
+  toast('Exported '+deals.length+' deals','var(--green)');
+}
+function exportJSON(){
+  var data={version:1,exported:new Date().toISOString(),threshold:profitThreshold,deals:deals};
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download='decision-tracker-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click(); URL.revokeObjectURL(url);
+  toast('Backup saved — '+deals.length+' deals','var(--green)');
+}
+function importJSON(e){
+  var file=e.target.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      var data=JSON.parse(ev.target.result);
+      // accept either a wrapped backup or a raw array
+      var imported=Array.isArray(data)?data:(data.deals&&Array.isArray(data.deals)?data.deals:null);
+      if(!imported) throw new Error('Unrecognised format');
+      // merge: add deals whose id doesn't already exist
+      var existingIds=deals.map(function(d){return d.id;});
+      var added=0;
+      imported.forEach(function(d){
+        if(d.id&&existingIds.indexOf(d.id)===-1){ deals.push(d); added++; }
+      });
+      // also restore threshold if present
+      if(data.threshold&&!isNaN(parseInt(data.threshold))){
+        profitThreshold=parseInt(data.threshold);
+        try{localStorage.setItem('dt_threshold',profitThreshold);}catch(e2){}
+        var ti=document.getElementById('threshold-input');
+        if(ti) ti.value=profitThreshold;
+      }
+      save(); render();
+      toast('Imported '+added+' new deals'+(added<imported.length?' ('+(imported.length-added)+' duplicates skipped)':''),'var(--green)');
+    }catch(err){
+      toast('Import failed — invalid file','var(--red)');
+    }
+    e.target.value=''; // reset input so same file can be re-imported
+  };
+  reader.readAsText(file);
+}
+function render(){
+  renderMetrics(); renderDeals(); renderHistory(); renderInsights();
+}
+
+function saveThreshold(){
+  var ti=document.getElementById('threshold-input');
+  if(!ti) return;
+  var v=parseInt(ti.value);
+  if(isNaN(v)||v<1){ toast('Enter a valid amount (min €1)','var(--red)'); return; }
+  profitThreshold=v;
+  try{ localStorage.setItem('dt_threshold',v); }catch(e){}
+  render();
+  toast('Threshold set to '+eur(v),'var(--green)');
+}
+
+function renderMetrics(){
+  var open=deals.filter(function(d){return !d.decision;});
+  var undecUp=open.reduce(function(s,d){return s+Math.max(0,cNet(d));},0);
+  var pnl=0, missed=0, avoided=0, reviewCount=0;
+  deals.forEach(function(d){
+    var ev=evalD(d); if(!ev) return;
+    // Confirmed P&L: only resold buys
+    if(ev.v==='good_buy'||ev.v==='small_win'||ev.v==='bad_buy') pnl+=ev.cp;
+    // Estimated missed: pass decisions without confirmed final outcome
+    else if(ev.v==='est_only'&&ev.estUpside>0) missed+=ev.estUpside;
+    // Avoided: good pass where net was negative (we correctly skipped a loss)
+    else if(ev.v==='good_pass'&&ev.net<0) avoided+=Math.abs(ev.net);
+    // Needs review: conflict, outcome_unknown
+    if(ev.v==='conflict'||ev.v==='outcome_unknown'||ev.v==='pass_reasonable') reviewCount++;
+  });
+  var bought=deals.filter(function(d){return d.decision==='buy';}).length;
+
+  setEl('s-open',   open.length,  'var(--muted2)');
+  setEl('s-upside', eur(undecUp), undecUp>0?'var(--green)':'var(--muted2)');
+  setEl('s-bought', bought,       'var(--blue)');
+  setEl('m-upside',  eur(undecUp), undecUp>0?'var(--green)':'var(--muted2)');
+  setEl('m-pnl',     eur(pnl),     pnl>0?'var(--green)':pnl<0?'var(--red)':'var(--muted2)');
+  setEl('m-missed',  eur(missed),  missed>0?'var(--amber)':'var(--muted2)');
+  setEl('m-avoided', eur(avoided), avoided>0?'var(--blue)':'var(--muted2)');
+  setEl('m-review',  reviewCount,  reviewCount>0?'var(--amber)':'var(--muted2)');
+  var needsUpdate=deals.filter(function(d){return d.decision&&!d.outcome;}).length;
+  setEl('s-needs-update', needsUpdate, needsUpdate>0?'var(--amber)':'var(--muted2)');
+}
+function setEl(id, val, col){
+  var el=document.getElementById(id); if(!el) return;
+  el.textContent=val; el.style.color=col;
+}
+
+function renderDeals(){
+  var grid=document.getElementById('dg'); if(!grid) return;
+  var pager=document.getElementById('pagination');
+  var list=[].concat(deals);
+  var searchEl=document.getElementById('search-input');
+  var q=searchEl?searchEl.value.trim().toLowerCase():'';
+  if(q) list=list.filter(function(d){return d.name.toLowerCase().indexOf(q)!==-1;});
+
+  if(activeFilter==='good')      list=list.filter(function(d){return edgeTier(d)==='strong_edge';});
+  if(activeFilter==='verify')    list=list.filter(function(d){return edgeTier(d)==='needs_verify';});
+  if(activeFilter==='undecided') list=list.filter(function(d){return !d.decision;});
+  if(activeFilter==='decided')   list=list.filter(function(d){return d.decision;});
+
+  if(activeSort==='net_desc') list.sort(function(a,b){return cNet(b)-cNet(a);});
+  if(activeSort==='net_asc')  list.sort(function(a,b){return cNet(a)-cNet(b);});
+  if(activeSort==='price_asc')  list.sort(function(a,b){return a.price-b.price;});
+  if(activeSort==='price_desc') list.sort(function(a,b){return b.price-a.price;});
+
+  if(list.length===0){
+    var isFirst=deals.length===0;
+    var msgs={
+      all:      isFirst
+        ? ['Add your first deal to get started',
+           'Spot a listing you\'re considering? Add it now. Enter the price, your market estimate, and costs — the app tells you if the numbers make sense.<br><br><button onclick="document.getElementById(\'f-name\').focus();document.getElementById(\'f-name\').scrollIntoView({behavior:\'smooth\',block:\'center\'})" style="padding:7px 18px;background:var(--green);color:#000;border:none;border-radius:var(--rs);font-family:Syne,sans-serif;font-size:12px;font-weight:600;cursor:pointer;margin-top:8px">Add your first deal ↓</button>']
+        : ['No deals match this filter', 'Try a different filter or search term.'],
+      good:    ['No strong-edge deals','All strong gates must pass: 3+ comps, same condition, low/med risk, clear condition, med/high confidence, net >= threshold.'],
+      verify:  ['No deals needing verification','These are deals with positive net upside but incomplete evidence.'],
+      undecided:['All decided','You\'ve acted on everything.'],
+      decided: ['None decided yet','Buy or pass on a deal.']
+    };
+    var m=msgs[activeFilter]||msgs.all;
+    grid.innerHTML='<div class="empty"><div class="ei">◎</div><p><strong>'+m[0]+'</strong><br><span style="opacity:.8;font-size:12px;line-height:1.6">'+m[1]+'</span></p></div>';
+    if(pager) pager.style.display='none';
+    return;
+  }
+
+  var totalPages=Math.ceil(list.length/PAGE_SIZE);
+  if(currentPage>totalPages) currentPage=totalPages;
+
+  var start=(currentPage-1)*PAGE_SIZE;
+  var pageList=list.slice(start, start+PAGE_SIZE);
+  grid.innerHTML=pageList.map(buildCard).join('');
+
+  // pagination bar
+  if(pager){
+    if(totalPages<=1){ pager.style.display='none'; return; }
+    pager.style.display='flex';
+    var btns='';
+    // prev
+    btns+='<button onclick="goPage('+(currentPage-1)+')" '+(currentPage===1?'disabled':'')+' class="pg-btn">‹ Prev</button>';
+    // page numbers — show max 5 around current
+    var lo=Math.max(1,currentPage-2), hi=Math.min(totalPages,currentPage+2);
+    if(lo>1) btns+='<button onclick="goPage(1)" class="pg-btn">1</button>'+(lo>2?'<span class="pg-sep">…</span>':'');
+    for(var i=lo;i<=hi;i++){
+      btns+='<button onclick="goPage('+i+')" class="pg-btn'+(i===currentPage?' pg-active':'')+'" >'+i+'</button>';
+    }
+    if(hi<totalPages) btns+=(hi<totalPages-1?'<span class="pg-sep">…</span>':'')+'<button onclick="goPage('+totalPages+')" class="pg-btn">'+totalPages+'</button>';
+    // next
+    btns+='<button onclick="goPage('+(currentPage+1)+')" '+(currentPage===totalPages?'disabled':'')+' class="pg-btn">Next ›</button>';
+    // count
+    btns+='<span class="pg-info">'+list.length+' deal'+(list.length!==1?'s':'')+' · page '+currentPage+' of '+totalPages+'</span>';
+    pager.innerHTML=btns;
+  }
+}
+
+function goPage(n){
+  currentPage=n;
+  renderDeals();
+  // scroll to top of grid
+  var dg=document.getElementById('dg');
+  if(dg) dg.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function buildCard(d){
+  var raw=cRaw(d), net=cNet(d), costs=cCosts(d);
+
+  // -- EDGE TIER + LABELS (must be first — used below) 
+  var et=edgeTier(d);
+  var edgeLabels={
+    strong_edge:'Strong est. edge',
+    needs_verify:'Needs verification',
+    no_edge:'No edge'
+  };
+  var edgeBadge={
+    strong_edge:'bg-strong',
+    needs_verify:'bg-needs',
+    no_edge:'bg-noedge'
+  };
+  var dcClass=et;
+  // -- QUALITY INDICATOR 
+  // Counts how many advanced fields differ from pessimistic defaults
+  var ADVC_DEFAULTS={src:'gut',cq:'similar',risk:'med',clar:'unsure'};
+  var refinedCount=0;
+  if((d.src||'gut')    !==ADVC_DEFAULTS.src)  refinedCount++;
+  if((d.cq||'similar') !==ADVC_DEFAULTS.cq)   refinedCount++;
+  if((d.risk||'med')   !==ADVC_DEFAULTS.risk)  refinedCount++;
+  if((d.clar||'unsure')!==ADVC_DEFAULTS.clar)  refinedCount++;
+  var advWasOpened=!!d.advOpened;
+  var qualHtml;
+  if(!advWasOpened||refinedCount===0){
+    qualHtml='<span class="qual-pill qual-default"><span class="qual-dot"></span>Using default assumptions</span>';
+  } else if(refinedCount<4){
+    qualHtml='<span class="qual-pill qual-partial"><span class="qual-dot"></span>Partially refined ('+refinedCount+'/4 fields)</span>';
+  } else {
+    qualHtml='<span class="qual-pill qual-high"><span class="qual-dot"></span>High-quality input</span>';
+  }
+
+  // -- EDGE FAILURE REASONS 
+  var failHtml='';
+  if(et!=='strong_edge'){
+    var fails=getEdgeFailures(d);
+    if(fails.length>0){
+      failHtml='<div style="margin-top:5px;margin-bottom:6px">'
+        +'<span style="font-size:9px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;font-weight:500">Missing signals</span>'
+        +'<div style="margin-top:3px;display:flex;flex-direction:column;gap:2px">'
+        +fails.map(function(r){
+          return '<span style="font-size:10px;color:var(--amber);display:flex;align-items:center;gap:5px">'
+            +'<span style="width:4px;height:4px;border-radius:50%;background:var(--amber);flex-shrink:0;display:inline-block"></span>'
+            +esc(r)+'</span>';
+        }).join('')
+        +'</div></div>';
+    }
+  }
+
+  var et_html='<div class="dm"><span class="dn">'+esc(d.name)+'</span>'
+    +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">'
+    +'<span class="dbadge '+edgeBadge[et]+'">'+edgeLabels[et]+'</span>'
+    +'</div></div>'
+    +failHtml;
+  var rc=raw>0?'pos':raw<0?'neg':'neu', nc=net>0?'pos':net<0?'neg':'neu';
+
+  // confidence pill (legacy)
+  var cm={low:['cp-low','Low conf'],med:['cp-med','Med conf'],high:['cp-high','High conf']};
+  var cv=cm[d.conf||'med'];
+
+  // Source / quality / risk / clarity labels
+  var srcLbl={gut:'Gut estimate',one_comp:'1 comp. sale',three_comp:'3+ comp. sales',expert:'Expert/source'};
+  var cqLbl={same:'Same item & cond.',similar:'Similar item',weak:'Weak comparison'};
+  var riskLbl={low:'Low risk',med:'Med risk',high:'High risk'};
+  var clarLbl={clear:'Condition clear',unsure:'Cond. not sure',unclear:'Cond. unclear'};
+
+  // Signal dots: g=good, w=warn, b=bad
+  function sigClass(val, goodVals, warnVals){
+    if(goodVals.indexOf(val)!==-1) return 'sig-ok';
+    if(warnVals.indexOf(val)!==-1) return 'sig-warn';
+    return 'sig-bad';
+  }
+  var srcSig  = sigClass(dSrc(d), ['three_comp','expert'],['one_comp']);
+  var cqSig   = sigClass(dCq(d),  ['same'],['similar']);
+  var riskSig = sigClass(dRisk(d),['low'],['med']);
+  var clarSig = sigClass(dClar(d),['clear'],['unsure']);
+
+  var sigGrid='<div class="sig-grid">'
+    +'<div class="sig '+srcSig+'"><div class="sig-dot"></div>'+(srcLbl[dSrc(d)]||'?')+'</div>'
+    +'<div class="sig '+cqSig+'"><div class="sig-dot"></div>'+(cqLbl[dCq(d)]||'?')+'</div>'
+    +'<div class="sig '+riskSig+'"><div class="sig-dot"></div>'+(riskLbl[dRisk(d)]||'?')+'</div>'
+    +'<div class="sig '+clarSig+'"><div class="sig-dot"></div>'+(clarLbl[dClar(d)]||'?')+'</div>'
+  +'</div>';
+
+  var warns='';
+  if(d.trigger!=null&&d.price<=d.trigger){
+    warns+='<div class="cwarn" style="background:var(--gdim);color:var(--green);border-left:2px solid var(--green)">✓ Buy trigger hit — listing price '+eur(d.price)+' is at or below your target of '+eur(d.trigger)+'.</div>';
+  } else if(d.trigger!=null){
+    warns+='<div class="cwarn" style="background:var(--surface2);color:var(--muted);border-left:2px solid var(--border)">Buy trigger: '+eur(d.trigger)+' — current price '+eur(d.price)+' is '+eur(d.price-d.trigger)+' above target.</div>';
+  }
+  if(d.market>d.price*3) warns+='<div class="cwarn cw-extreme">⚠ Extreme upside detected — verify authenticity, condition, seller context and market estimate.</div>';
+  if(net<=0) warns+='<div class="cwarn cw-noedge">No edge after costs (€'+costs.toFixed(2)+' total).</div>';
+
+  var ial=net>0
+    ?'Estimated net upside: <strong>'+eur(net)+'</strong>. This is an estimate — see signals above.'
+    :net===0
+      ?'No net upside after costs — passing is rational.'
+      :'Negative net after costs. Buying likely results in a loss.';
+  var ic=et==='strong_edge'?'good':et==='no_edge'?'bad':'neutral';
+
+  var foot='';
+  if(d.decision){
+    foot='<div class="dtaken"><span class="dlabel '+d.decision+'">'+(d.decision==='buy'?'✓ Bought':'→ Passed')+'</span><span class="dtime">'+fmtTime(d.decisionTime)+'</span><button class="ubtn" onclick="undoDecide(\''+d.id+'\')">undo</button></div>';
+  } else {
+    foot='<div class="dbtns"><button class="dbtn bb" onclick="decide(\''+d.id+'\',\'buy\')">Buy</button><button class="dbtn pb" onclick="decide(\''+d.id+'\',\'pass\')">Pass</button></div>';
+  }
+
+  var ocHtml=d.decision?buildOutcome(d):'';
+
+  // -- RECOMMENDED ACTION 
+  var ra=getRecommendedAction(d);
+  var raColors={g:'var(--green)',a:'var(--amber)',r:'var(--muted2)'};
+  var raBg={g:'var(--gdim)',a:'var(--adim)',r:'var(--surface2)'};
+  var raHtml='<div style="display:flex;align-items:flex-start;gap:6px;padding:7px 10px;background:'+raBg[ra.style]+';border-radius:5px;margin-bottom:8px">'
+    +'<span style="font-size:9px;letter-spacing:.5px;text-transform:uppercase;font-weight:500;color:'+raColors[ra.style]+';white-space:nowrap;margin-top:1px">Action</span>'
+    +'<span style="font-size:11px;color:'+raColors[ra.style]+';line-height:1.4">'+esc(ra.text)+'</span>'
+    +'</div>';
+
+  return '<div class="dc '+dcClass+'" id="card-'+d.id+'">'
+    +'<div class="dt">'
+      +et_html
+      +'<span class="cpill '+cv[0]+'">'+cv[1]+'</span>'
+      +qualHtml
+      +warns
+      +sigGrid
+      +'<div class="pg">'
+        +'<div class="pc"><div class="pc-l">Listed</div><div class="pc-v">'+eur(d.price)+'</div></div>'
+        +'<div class="pc"><div class="pc-l">Market est.</div><div class="pc-v">'+eur(d.market)+'</div></div>'
+        +'<div class="pc"><div class="pc-l">Raw upside</div><div class="pc-v '+rc+'">'+eur(raw)+'</div></div>'
+        +'<div class="pc"><div class="pc-l">Net upside</div><div class="pc-v '+nc+'">'+eur(net)+'</div></div>'
+      +'</div>'
+      +(d.notes?'<p class="dnote">"'+esc(d.notes)+'"</p>':'')
+      +'<div class="il '+ic+'">'+ial+'</div>'
+      +'<div class="dts">Added '+fmtTime(d.created)+'</div>'
+    +'</div>'
+    +'<div class="df">'+raHtml+foot+ocHtml
+    +'<div style="display:flex;gap:6px;margin-top:7px;align-items:center">'
+    +(d.decision?'<label style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted);cursor:pointer;margin-right:2px"><input type="checkbox" id="chk-'+d.id+'" onchange="toggleBulkSelect(\''+d.id+'\')" style="accent-color:var(--green);cursor:pointer"> Select</label>':'')
+    +'<button class="delbtn" style="flex:1" onclick="openEdit(\''+d.id+'\')">Edit</button>'
+    +'<button class="delbtn" style="flex:1" onclick="dupDeal(\''+d.id+'\')">Duplicate</button>'
+    +'<button class="delbtn" style="flex:1" onclick="delDeal(\''+d.id+'\')">Remove</button>'
+    +'</div></div>'
+  +'</div>';
+}
+
+function buildOutcome(d){
+  var ev=evalD(d);
+  var chg='<button class="vchg" onclick="clearOutcome(\''+d.id+'\')">change</button>';
+
+  if(ev){
+    var main='', note='', meta='';
+
+    if(ev.v==='good_buy'){
+      main='<div class="vd vg"><span class="vd-txt">✓ Good buy — profit '+eur(ev.cp)+'<span class="cbadge cb-confirmed">Confirmed</span></span>'+chg+'</div>';
+      meta='Bought at '+eur(d.price)+', resold at '+eur(ev.resalePrice)+'.';
+
+    } else if(ev.v==='small_win'){
+      main='<div class="vd va"><span class="vd-txt">~ Small win — profit '+eur(ev.cp)+'<span class="cbadge cb-estimated">Confirmed</span></span>'+chg+'</div>';
+      meta='Bought at '+eur(d.price)+', resold at '+eur(ev.resalePrice)+'. Profit below your '+eur(profitThreshold)+' threshold — consider whether time and risk were worth it.';
+
+    } else if(ev.v==='bad_buy'){
+      main='<div class="vd vr"><span class="vd-txt">✕ Bad buy — loss '+eur(Math.abs(ev.cp))+'<span class="cbadge cb-confirmed">Confirmed</span></span>'+chg+'</div>';
+      meta='Bought at '+eur(d.price)+', resold at '+eur(ev.resalePrice)+'.';
+
+    } else if(ev.v==='buy_pending'){
+      main='<div class="vd vn"><span class="vd-txt">Bought — no resale recorded yet<span class="cbadge cb-pending">Pending</span></span>'+chg+'</div>';
+      meta='Enter the resale price once sold to confirm profit or loss.';
+
+    } else if(ev.v==='good_pass'){
+      main='<div class="vd vg"><span class="vd-txt">✓ Good pass<span class="cbadge cb-confirmed">Confirmed</span></span>'+chg+'</div>';
+      meta='Listing sold for '+eur(ev.fsp)+'. Potential profit would have been '+eur(ev.potentialProfit)+' — at or below zero after costs. Correct decision.';
+
+    } else if(ev.v==='pass_reasonable'){
+      main='<div class="vd va"><span class="vd-txt">Pass may have been reasonable<span class="cbadge cb-review">Needs review</span></span>'+chg+'</div>';
+      note='Listing sold for '+eur(ev.fsp)+', suggesting potential profit of '+eur(ev.potentialProfit)+'. However, reason logged ('+( RLABELS[ev.reason]||'Unknown')+') indicates real risk. Verify your market estimate before treating this as a missed opportunity.';
+
+    } else if(ev.v==='missed_opp'){
+      main='<div class="vd va"><span class="vd-txt">Missed opportunity — potential profit '+eur(ev.potentialProfit)+'<span class="cbadge cb-confirmed">Confirmed</span></span>'+chg+'</div>';
+      note='Listing sold for '+eur(ev.fsp)+'. If you had bought at '+eur(d.price)+' and resold at that price, net profit after costs would have been '+eur(ev.potentialProfit)+'.';
+
+    } else if(ev.v==='conflict'){
+      main='<div class="vd vn"><span class="vd-txt">Outcome conflict — needs review<span class="cbadge cb-conflict">Conflict</span></span>'+chg+'</div>';
+      note='Outcome conflict — final sale ('+eur(ev.fsp)+') differs strongly from your market estimate ('+eur(d.market)+'). Do not score this as good or bad. Review condition, authenticity, seller context, or estimate accuracy.';
+
+    } else if(ev.v==='est_only'){
+      main='<div class="vd va"><span class="vd-txt">Estimated only'+(ev.estUpside>0?' — est. missed upside '+eur(ev.estUpside):'')+' <span class="cbadge cb-estimated">Estimated</span></span>'+chg+'</div>';
+      meta='Listing no longer visible. Estimate based on market value '+eur(d.market)+' minus listing '+eur(d.price)+' minus costs. Not confirmed — actual outcome unknown.';
+
+    } else if(ev.v==='still'){
+      var staleMsg='';
+      if(ev.daysStale!=null&&ev.daysStale>=7){
+        staleMsg='<div class="cnote" style="border-color:var(--blue)">Marked '+(ev.daysStale===1?'1 day':ev.daysStale+' days')+' ago — worth checking if anything has changed.</div>';
+      }
+      main='<div class="vd vb"><span class="vd-txt">'+(d.decision==='buy'?'Still holding':'Still listed')+'<span class="cbadge cb-still">Not counted</span></span>'+chg+'</div>';
+      return '<div class="oc">'+main+staleMsg+'</div>';
+
+    } else if(ev.v==='outcome_unknown'){
+      main='<div class="vd vn"><span class="vd-txt">Outcome unknown<span class="cbadge cb-review">Unresolved</span></span>'+chg+'</div>';
+      meta='Mark as another outcome type when you have more information.';
+    }
+
+    return '<div class="oc">'+main+(note?'<div class="cnote">'+note+'</div>':'')+(meta?'<div class="vmeta">'+meta+'</div>':'')+'</div>';
+  }
+
+  // awaiting outcome — options differ per decision type
+  var isBuy=d.decision==='buy';
+  var rOpts=Object.keys(RLABELS).map(function(k){return '<option value="'+k+'">'+RLABELS[k]+'</option>';}).join('');
+
+  var buyOptions=
+    '<button class="otb" onclick="showSoldForm(\''+d.id+'\')"><span class="oti">€</span>Sold — enter resale price</button>'
+   +'<button class="otb" onclick="saveOther(\''+d.id+'\',\'still\')"><span class="oti">○</span>Still holding it</button>'
+   +'<button class="otb" onclick="saveOther(\''+d.id+'\',\'gone\')"><span class="oti">✕</span>Sold — no price data</button>'
+   +'<button class="otb" onclick="saveOther(\''+d.id+'\',\'unknown\')"><span class="oti">?</span>Unknown</button>';
+
+  var passOptions=
+    '<button class="otb" onclick="showSoldForm(\''+d.id+'\')"><span class="oti">€</span>Listing sold — enter price</button>'
+   +'<button class="otb" onclick="saveOther(\''+d.id+'\',\'still\')"><span class="oti">○</span>Still listed</button>'
+   +'<button class="otb" onclick="saveOther(\''+d.id+'\',\'gone\')"><span class="oti">✕</span>No longer visible</button>'
+   +'<button class="otb" onclick="saveOther(\''+d.id+'\',\'unknown\')"><span class="oti">?</span>Unknown</button>';
+
+  return '<div class="oc">'
+    +'<div class="oq">'+(isBuy?'What happened after you bought it?':'What happened to this listing?')+'</div>'
+    +'<div class="otg">'+(isBuy?buyOptions:passOptions)+'</div>'
+    +'<div id="sf-'+d.id+'" class="sform" style="display:none">'
+      +'<label>'+(isBuy?'Your resale price (€)':'Final listing sold price (€)')+'</label>'
+      +'<div class="srow">'
+        +'<input class="sinput" id="sp-'+d.id+'" type="number" min="0" step="0.01" placeholder="'+(isBuy?'What you sold it for':'What the listing sold for')+'" onkeydown="if(event.key===\'Enter\')confirmSold(\''+d.id+'\')">'
+        +'<button class="cbtn" onclick="confirmSold(\''+d.id+'\')">Confirm ↗</button>'
+      +'</div>'
+      +'<div class="snote">'+(isBuy?'Enter your actual resale price to confirm profit or loss.':'This reflects the specific listing outcome — not necessarily true market value.')+'</div>'
+      +(!isBuy?'<label style="margin-top:5px">Why did it sell this way?</label><select class="rsel" id="sr-'+d.id+'">'+rOpts+'</select>':'')
+    +'</div>'
+  +'</div>';
+}
+
+function renderHistory(){
+  var list=document.getElementById('hl'); if(!list) return;
+  var decided=deals.filter(function(d){return d.decision;}).sort(function(a,b){return b.decisionTime-a.decisionTime;});
+  if(decided.length===0){ list.innerHTML='<div class="hempty">No decisions yet — buy or pass on a deal to begin tracking.</div>'; return; }
+  var vm={
+    good_buy:      ['hb-g','Good buy'],
+    small_win:     ['hb-a','Small win'],
+    bad_buy:       ['hb-r','Bad buy'],
+    buy_pending:   ['hb-b','Pending'],
+    good_pass:     ['hb-g','Good pass'],
+    pass_reasonable:['hb-a','Reasonable?'],
+    missed_opp:    ['hb-a','Missed opp.'],
+    conflict:      ['hb-r','Conflict'],
+    est_only:      ['hb-a','Est. only'],
+    still:         ['hb-b','Still listed'],
+    outcome_unknown:['hb-n','Unknown']
+  };
+  list.innerHTML=decided.map(function(d){
+    var net=cNet(d), nc=net>0?'var(--green)':net<0?'var(--red)':'var(--amber)';
+    var ev=evalD(d);
+    var badge='<span class="hbadge hb-n">No outcome</span>';
+    if(ev){ var bv=vm[ev.v]||['hb-n','—']; badge='<span class="hbadge '+bv[0]+'">'+bv[1]+'</span>'; }
+    return '<div class="hi"><span class="hi-n">'+esc(d.name)+'</span><span class="hi-d '+d.decision+'">'+d.decision+'</span><span class="hi-p" style="color:'+nc+'">'+eur(net)+'</span>'+badge+'<span class="hi-t">'+fmtTime(d.decisionTime)+'</span></div>';
+  }).join('');
+}
+
+function renderInsights(){
+  var el=document.getElementById('insights-content'); if(!el) return;
+
+  // -- CLASSIFY ALL DEALS 
+  var totals={
+    total:deals.length, bought:0, passed:0, pending:0,
+    good_buy:0, small_win:0, bad_buy:0,
+    good_pass:0, est_missed:0, needs_review:0,
+    confirmed_pnl:0, est_missed_val:0,
+    conf_low_good:0, conf_low_bad:0,
+    conf_med_good:0, conf_med_bad:0,
+    conf_high_good:0, conf_high_bad:0,
+    strong_edge_passed:0,
+    confirmed_buy_count:0, below_market_confirmed:0
+  };
+  var confirmedProfitTimeline=[]; // {time, profit, name}
+
+  deals.forEach(function(d){
+    var ev=evalD(d);
+    if(!d.decision){ totals.pending++; return; }
+    if(d.decision==='buy') totals.bought++;
+    if(d.decision==='pass') totals.passed++;
+
+    if(!ev){ totals.pending++; return; }
+    var v=ev.v;
+
+    if(ev.v==='good_buy')      { totals.good_buy++;  totals.confirmed_pnl+=ev.cp; confirmedProfitTimeline.push({time:d.decisionTime,profit:ev.cp,name:d.name}); }
+    else if(ev.v==='small_win'){ totals.small_win++; totals.confirmed_pnl+=ev.cp; confirmedProfitTimeline.push({time:d.decisionTime,profit:ev.cp,name:d.name}); }
+    else if(ev.v==='bad_buy')  { totals.bad_buy++;   totals.confirmed_pnl+=ev.cp; confirmedProfitTimeline.push({time:d.decisionTime,profit:ev.cp,name:d.name}); }
+    else if(ev.v==='good_pass')    { totals.good_pass++; }
+    else if(ev.v==='missed_opp')   { totals.est_missed++; totals.est_missed_val+=Math.max(0,ev.potentialProfit||0); }
+    else if(ev.v==='conflict'||ev.v==='pass_reasonable') { totals.needs_review++; }
+    else if(ev.v==='est_only')     { if((ev.estUpside||0)>0) { totals.est_missed++; totals.est_missed_val+=ev.estUpside; } }
+    else                           { totals.pending++; } // still / outcome_unknown / buy_pending
+
+    // confidence tracking (confirmed buy outcomes only)
+    var conf=d.conf||'med';
+    var isBuyConfirmed=(ev.v==='good_buy'||ev.v==='small_win'||ev.v==='bad_buy');
+    if(isBuyConfirmed){
+      totals.confirmed_buy_count++;
+      var isGood=(ev.v==='good_buy');
+      var isBad=(ev.v==='bad_buy');
+      var conf=dConf(d);
+      if(conf==='low'){ if(isGood) totals.conf_low_good++; if(isBad) totals.conf_low_bad++; }
+      if(conf==='med'){ if(isGood) totals.conf_med_good++; if(isBad) totals.conf_med_bad++; }
+      if(conf==='high'){ if(isGood) totals.conf_high_good++; if(isBad) totals.conf_high_bad++; }
+      if(d.outcome&&d.outcome.userResalePrice!=null&&d.outcome.userResalePrice<d.market*0.7) totals.below_market_confirmed++;
+    }
+    if(d.decision==='pass'&&edgeTier(d)==='strong_edge') totals.strong_edge_passed++;
+  });
+
+  var completedDecisions=totals.good_buy+totals.small_win+totals.bad_buy+totals.good_pass+totals.est_missed+totals.needs_review;
+  var confirmedBuys=totals.good_buy+totals.small_win+totals.bad_buy;
+  var unresolvedPct=totals.total>0?totals.pending/totals.total:0;
+
+  // -- BUILD HTML 
+  var h='';
+
+  // Summary metrics (confirmed separate from estimated)
+  h+='<div class="ins-sep">Summary</div>';
+  h+='<div class="ins-grid">';
+  h+=iCell('Total deals',totals.total,'','var(--muted2)');
+  h+=iCell('Bought',totals.bought,'decisions','var(--muted2)');
+  h+=iCell('Passed',totals.passed,'decisions','var(--muted2)');
+  h+=iCell('Pending',totals.pending,'no outcome yet','var(--muted2)');
+  h+=iCell('Good buys',totals.good_buy,'confirmed','var(--green)');
+  h+=iCell('Small wins',totals.small_win,'confirmed','var(--amber)');
+  h+=iCell('Bad buys',totals.bad_buy,'confirmed','var(--red)');
+  h+=iCell('Good passes',totals.good_pass,'confirmed/est.','var(--green)');
+  h+=iCell('Est. missed',totals.est_missed,'estimated only','var(--amber)');
+  h+=iCell('Needs review',totals.needs_review,'','var(--amber)');
+  h+=iCell('Confirmed P&L',eur(totals.confirmed_pnl),'confirmed only',totals.confirmed_pnl>0?'var(--green)':totals.confirmed_pnl<0?'var(--red)':'var(--muted2)');
+  h+=iCell('Est. missed €',eur(totals.est_missed_val),'estimated only — not confirmed','var(--amber)');
+  h+='</div>';
+  h+='<div style="font-size:9px;color:var(--muted);margin-bottom:16px">Confirmed P&L uses only deals with a recorded resale price. Estimated data is labelled separately and never mixed with confirmed figures.</div>';
+
+  // Chart A: Profit over time
+  h+='<div class="ins-sep">Confirmed profit over time</div>';
+  confirmedProfitTimeline.sort(function(a,b){return a.time-b.time;});
+  if(confirmedProfitTimeline.length<1){
+    h+='<div class="ins-empty">Not enough confirmed outcomes yet.</div>';
+  } else {
+    var maxAbs=Math.max.apply(null,confirmedProfitTimeline.map(function(x){return Math.abs(x.profit);}));
+    if(maxAbs===0) maxAbs=1;
+    h+='<div class="pt-row">';
+    confirmedProfitTimeline.forEach(function(x){
+      var pct=Math.round(Math.abs(x.profit)/maxAbs*56);
+      if(x.profit>=0){
+        h+='<div class="pt-bar pos" style="height:'+pct+'px" title="'+esc(x.name)+': '+eur(x.profit)+'"></div>';
+      } else {
+        h+='<div class="pt-bar neg" style="height:'+pct+'px" title="'+esc(x.name)+': '+eur(x.profit)+'"></div>';
+      }
+    });
+    h+='</div><div class="pt-labels">';
+    confirmedProfitTimeline.forEach(function(x){
+      var d=new Date(x.time);
+      var dateStr=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+      h+='<div class="pt-label" title="'+esc(x.name)+'">'+eur(x.profit)+'<br><span style="opacity:.6">'+dateStr+'</span></div>';
+    });
+    h+='</div><div style="font-size:9px;color:var(--muted);margin-top:6px">Each bar = one confirmed buy outcome. Hover for name. Confirmed only.</div>';
+  }
+
+  // Chart B: Decision breakdown
+  h+='<div class="ins-sep">Decision breakdown</div>';
+  var breakdown=[
+    {lbl:'Good buy',count:totals.good_buy,color:'var(--green)'},
+    {lbl:'Small win (≥€0, &lt;'+eur(profitThreshold)+')',count:totals.small_win,color:'var(--amber)'},
+    {lbl:'Bad buy',count:totals.bad_buy,color:'var(--red)'},
+    {lbl:'Good pass',count:totals.good_pass,color:'var(--green)'},
+    {lbl:'Missed opportunity',count:totals.est_missed,color:'var(--amber)'},
+    {lbl:'Needs review',count:totals.needs_review,color:'var(--amber)'},
+    {lbl:'Pending',count:totals.pending,color:'var(--muted)'}
+  ];
+  var maxB=Math.max.apply(null,breakdown.map(function(x){return x.count;}))||1;
+  h+='<div class="ins-card" style="padding:14px 16px;background:var(--surface2);border:none">';
+  breakdown.forEach(function(b){
+    var pct=Math.round(b.count/maxB*100);
+    h+='<div class="bar-row">'
+      +'<span class="bar-lbl">'+b.lbl+'</span>'
+      +'<div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+b.color+'"></div></div>'
+      +'<span class="bar-count">'+b.count+'</span>'
+      +'</div>';
+  });
+  h+='</div>';
+
+  // Chart C: Confidence vs outcome
+  h+='<div class="ins-sep">Market confidence vs outcome</div>';
+  if(confirmedBuys<2){
+    h+='<div class="ins-empty">More confirmed buy outcomes needed to detect confidence patterns.</div>';
+  } else {
+    var confData=[
+      {lbl:'Low conf.',good:totals.conf_low_good,bad:totals.conf_low_bad},
+      {lbl:'Med conf.',good:totals.conf_med_good,bad:totals.conf_med_bad},
+      {lbl:'High conf.',good:totals.conf_high_good,bad:totals.conf_high_bad}
+    ];
+    h+='<div class="ins-card" style="padding:14px 16px;background:var(--surface2);border:none">';
+    confData.forEach(function(c){
+      var total=c.good+c.bad;
+      if(total===0){ h+='<div class="bar-row"><span class="bar-lbl">'+c.lbl+'</span><span style="font-size:11px;color:var(--muted)">No confirmed data</span></div>'; return; }
+      var goodPct=Math.round(c.good/total*100);
+      h+='<div class="bar-row">'
+        +'<span class="bar-lbl">'+c.lbl+' ('+total+' confirmed)</span>'
+        +'<div class="bar-track" style="position:relative">'
+          +'<div class="bar-fill" style="width:'+goodPct+'%;background:var(--green)"></div>'
+        +'</div>'
+        +'<span class="bar-count" style="font-size:9px;width:50px">'+goodPct+'% good</span>'
+        +'</div>';
+    });
+    h+='<div style="font-size:9px;color:var(--muted);margin-top:6px">% of confirmed buy outcomes that were "Good buy". Confirmed data only.</div>';
+    h+='</div>';
+  }
+
+  // Insights
+  h+='<div class="ins-sep">Detected patterns</div>';
+  if(completedDecisions<3){
+    h+='<div class="ins-empty">Add more completed decisions to unlock reliable patterns.</div>';
+  } else {
+    var insights=[];
+
+    // 1. Small wins too common
+    if(confirmedBuys>=3&&totals.small_win/confirmedBuys>0.4){
+      insights.push({type:'warn',text:'<strong>You often accept small wins.</strong> '+Math.round(totals.small_win/confirmedBuys*100)+'% of your confirmed buys are below your €'+profitThreshold+' threshold. Consider raising your minimum or being more selective.'});
+    }
+    // 2. Low-confidence bad outcomes
+    if(totals.conf_low_bad>0&&totals.conf_low_bad>=(totals.conf_med_bad+totals.conf_high_bad)){
+      insights.push({type:'warn',text:'<strong>Low-confidence deals create most bad outcomes.</strong> Your low-confidence buys have more losses than medium and high combined. Trust your gut less on uncertain deals.'});
+    }
+    // 3. High-confidence outperforms
+    var highTotal=totals.conf_high_good+totals.conf_high_bad;
+    var lowMedTotal=totals.conf_low_good+totals.conf_low_bad+totals.conf_med_good+totals.conf_med_bad;
+    if(highTotal>=2&&lowMedTotal>=2){
+      var highRate=totals.conf_high_good/highTotal;
+      var lowMedRate=(totals.conf_low_good+totals.conf_med_good)/lowMedTotal;
+      if(highRate-lowMedRate>0.3){
+        insights.push({type:'good',text:'<strong>Your high-confidence deals clearly outperform.</strong> '+Math.round(highRate*100)+'% success rate vs '+Math.round(lowMedRate*100)+'% on low/med confidence. Back your conviction more.'});
+      }
+    }
+    // 4. Passing strong edges
+    if(totals.strong_edge_passed>=2){
+      insights.push({type:'warn',text:'<strong>You pass on strong estimated edges often.</strong> You\'ve passed '+totals.strong_edge_passed+' deals your own checks rated as strong. Review whether hesitation or external factors are driving this.'});
+    }
+    // 5. Too many unresolved
+    if(unresolvedPct>0.3&&totals.total>=5){
+      insights.push({type:'info',text:'<strong>Too many unresolved deals</strong> ('+Math.round(unresolvedPct*100)+'% of total). Update outcomes on completed deals to make your patterns reliable.'});
+    }
+    // 6. Optimistic market estimates
+    if(totals.confirmed_buy_count>=3&&totals.below_market_confirmed/totals.confirmed_buy_count>0.5){
+      insights.push({type:'warn',text:'<strong>Your market value estimates may be too optimistic.</strong> More than half of your confirmed resales came in below 70% of your market estimate. Consider using more conservative figures.'});
+    }
+
+    // Early insight: fires with just 1 confirmed buy
+  if(confirmedBuys===1){
+    var solo=deals.find(function(d){var ev=evalD(d);return ev&&(ev.v==='good_buy'||ev.v==='small_win'||ev.v==='bad_buy');});
+    if(solo){
+      var soloEv=evalD(solo);
+      if(soloEv.v==='small_win') insights.push({type:'info',text:'<strong>Your first confirmed result was a small win</strong> ('+eur(soloEv.cp)+'). That\'s a start — but below your €'+profitThreshold+' threshold. Think about whether the time and effort were worth it before doing the same deal again.'});
+      else if(soloEv.v==='bad_buy') insights.push({type:'warn',text:'<strong>Your first confirmed result was a loss</strong> ('+eur(soloEv.cp)+'). Record more outcomes to see if this is a pattern or a one-off.'});
+      else if(soloEv.v==='good_buy') insights.push({type:'good',text:'<strong>Your first confirmed result was a good buy</strong> (+'+eur(soloEv.cp)+'). Keep recording outcomes to build a reliable picture.'});
+    }
+  }
+    insights=insights.slice(0,3); // max 3
+  if(insights.length===0){
+      h+='<div class="ins-empty">No strong patterns detected yet. Keep adding outcomes.</div>';
+    } else {
+      insights.forEach(function(ins){
+        h+='<div class="insight-item '+ins.type+'"><div class="insight-dot '+ins.type+'"></div><div class="insight-txt">'+ins.text+'</div></div>';
+      });
+    }
+  }
+
+  el.innerHTML=h;
+}
+
+function iCell(lbl,val,sub,col){
+  return '<div class="ins-cell"><div class="ins-cell-lbl">'+lbl+'</div><div class="ins-cell-val" style="color:'+col+'">'+val+'</div>'+(sub?'<div class="ins-cell-sub">'+sub+'</div>':'')+'</div>';
+}
+
+render();
+setInterval(render, 60000);
+</script>
+</body>
+</html>
